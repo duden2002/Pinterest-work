@@ -11,7 +11,7 @@ function Home() {
   const [filteredPosts, setFilteredPosts] = useState([]);
   const [searchTag, setSearchTag] = useState('');
   const { authState } = useContext(AuthContext);
-  const postFilterRef = useRef(null);
+  const postFilterRef = useRef(null)
 
   useEffect(() => {
     const fetchPosts = async () => {
