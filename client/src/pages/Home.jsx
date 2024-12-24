@@ -9,21 +9,26 @@ function Home() {
   const location = useLocation();
   const [listOfPosts, setListOfPosts] = useState([]);
   const [filteredPosts, setFilteredPosts] = useState([]);
-  const [searchTag, setSearchTag] = useState('');
+  const [searchTag, setSearchTag] = useState("");
   const { authState } = useContext(AuthContext);
-  const postFilterRef = useRef(null)
+  const postFilterRef = useRef(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         const response = authState.status
-          ? await axios.get("http://localhost:3001/posts", { withCredentials: true })
+          ? await axios.get("http://localhost:3001/posts", {
+              withCredentials: true,
+            })
           : await axios.get("http://localhost:3001/posts/default");
 
-        const likedPostIds = response.data.likedPosts?.map(like => like.PostId) || [];
+        const likedPostIds =
+          response.data.likedPosts?.map((like) => like.PostId) || [];
+        const collectPostIds = response.data.collect?.map((mark) => mark.PostId) || [];
         const posts = response.data.listOfPosts.map((post) => ({
           ...post,
           Liked: likedPostIds.includes(post.id),
+          Collect: collectPostIds.includes(post.id),
         }));
 
         setListOfPosts(posts);
@@ -39,17 +44,22 @@ function Home() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
-    const tagsFromURL = urlParams.get('tags');
+    const tagsFromURL = urlParams.get("tags");
     if (tagsFromURL) {
-      console.log("dfsdf")
-      const tagsToSearch = tagsFromURL.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+      console.log("dfsdf");
+      const tagsToSearch = tagsFromURL
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
       setSearchTag(tagsFromURL);
       // Обновляем фильтрацию через функцию из PostFilter
-      setFilteredPosts(listOfPosts.filter(post =>
-        tagsToSearch.every(tag => post.tags && post.tags.includes(tag))
-      ));
+      setFilteredPosts(
+        listOfPosts.filter((post) =>
+          tagsToSearch.every((tag) => post.tags && post.tags.includes(tag))
+        )
+      );
     } else {
-      setSearchTag('');
+      setSearchTag("");
       setFilteredPosts(listOfPosts);
     }
   }, [location.search, listOfPosts]);
@@ -59,7 +69,6 @@ function Home() {
       postFilterRef.current.handleTagClick(tag); // Вызываем метод дочернего компонента
     }
   };
-
 
   const likeAPost = (postId) => {
     if (authState.status === true) {
@@ -101,7 +110,49 @@ function Home() {
           console.error("Ошибка при лайке поста:", error);
         });
     } else {
-      alert("Авторизуйся!!!");
+      alert("Чтобы ставить лайки нужно авторизоваться");
+    }
+  };
+
+  const collections = (postId) => {
+    if (authState.status === true) {
+      axios
+        .post(
+          "http://localhost:3001/collection",
+          { PostId: postId },
+          { withCredentials: true }
+        )
+        .then((response) => {
+          setListOfPosts((prevPosts) =>
+            prevPosts.map((post) => {
+              if (post.id === postId) {
+                const collect = response.data.collect;
+                return {
+                  ...post,
+                  Collect: collect,
+                };
+              }
+              return post;
+            })
+          );
+          setFilteredPosts((prevPosts) =>
+            prevPosts.map((post) => {
+              if (post.id === postId) {
+                const collect = response.data.collect;
+                return {
+                  ...post,
+                  Collect: collect,
+                };
+              }
+              return post;
+            })
+          );
+        })
+        .catch((error) => {
+          console.error("Ошибка при лайке поста:", error);
+        });
+    } else {
+      alert("Чтобы ставить лайки нужно авторизоваться");
     }
   };
 
@@ -129,11 +180,17 @@ function Home() {
               <div>{post.title}</div>
               <div>{post.username}</div>
               <div>
-                {post.tags && Array.isArray(post.tags) && post.tags.map((tag, index) => (
-                  <span key={index} onClick={() => handleTagClickFromParent(tag)} className="tag">
-                    {tag}
-                  </span>
-                ))}
+                {post.tags &&
+                  Array.isArray(post.tags) &&
+                  post.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      onClick={() => handleTagClickFromParent(tag)}
+                      className="tag"
+                    >
+                      {tag}
+                    </span>
+                  ))}
               </div>
               {post.Liked ? (
                 <button
@@ -175,6 +232,39 @@ function Home() {
                 </button>
               )}
               <label>{post.Likes.length}</label>
+              {post.Collect ? (
+                <button
+                  onClick={() => {
+                    collections(post.id);
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="32px"
+                    viewBox="0 -960 960 960"
+                    width="32px"
+                    fill="#5084C1"
+                  >
+                    <path d="M200-120v-665q0-24 18-42t42-18h440q24 0 42 18t18 42v665L480-240 200-120Z" />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    collections(post.id);
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="32px"
+                    viewBox="0 -960 960 960"
+                    width="32px"
+                    fill="#000000"
+                  >
+                    <path d="M200-120v-665q0-24 18-42t42-18h440q24 0 42 18t18 42v665L480-240 200-120Zm60-91 220-93 220 93v-574H260v574Zm0-574h440-440Z" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         ))}

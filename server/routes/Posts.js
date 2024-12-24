@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Posts, Likes } = require("../models");
+const { Posts, Likes, Collections } = require("../models");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs")
@@ -29,11 +29,15 @@ router.get("/", validateToken, async (req, res) => {
 
     // Получаем все посты с лайками
     const listOfPosts = await Posts.findAll({
-      include: [Likes],
+      include: [
+        { model: Likes, where: { UserId: req.user.id }, required: false },
+        { model: Collections, where: { UserId: req.user.id }, required: false },
+      ],
     });
 
     // Получаем лайки текущего пользователя
-    const likedPosts = await Likes.findAll({ where: { UserId: req.user.id } });
+    const likedPosts = await Likes.findAll({ where: { UserId: req.user.id }});
+    const collect = await Collections.findAll({ where: { UserId: req.user.id }});
 
     // Форматируем данные: преобразуем теги в массивы и добавляем путь к изображениям
     const formattedPosts = listOfPosts.map((post) => ({
@@ -52,7 +56,7 @@ router.get("/", validateToken, async (req, res) => {
       : formattedPosts;
 
     // Отправляем данные клиенту
-    res.json({ listOfPosts: filteredPosts, likedPosts });
+    res.json({ listOfPosts: filteredPosts, likedPosts, collect });
   } catch (error) {
     console.error("Ошибка при получении списка постов", error);
     res.status(500).json({ error: "Ошибка получения постов" });
@@ -135,6 +139,7 @@ router.get("/byuserId/:id", async (req, res) => {
   const id = req.params.id
   const listOfPosts = await Posts.findAll({where: {UserId: id}, include: [Likes]});
   let likedPosts = await Likes.findAll({where: {UserId: id}});
+  let collectPosts = await Collections.findAll({where: {UserId: id}});
   try{
   const formattedPosts = listOfPosts.map(post => ({
     ...post.dataValues,
@@ -142,9 +147,15 @@ router.get("/byuserId/:id", async (req, res) => {
 }));
 
   let formattedLikedPosts = likedPosts.map(post => post.PostId)
+  let formattedCollectPosts = collectPosts.map(post => post.PostId)
 
   if(formattedLikedPosts) {
     likedPosts = await Posts.findAll({where: {id: formattedLikedPosts}})
+  } else {
+    console.error("Лайкнутых постов не обнаружено")
+  }
+  if(formattedCollectPosts) {
+    collectPosts = await Posts.findAll({where: {id: formattedCollectPosts}})
   } else {
     console.error("Лайкнутых постов не обнаружено")
   }
@@ -153,8 +164,12 @@ router.get("/byuserId/:id", async (req, res) => {
     ...post.dataValues,
     imagePath: post.imagePath ? `http://localhost:3001/${(post.imagePath)}` : null  
   }))
+  formattedCollectPosts = collectPosts.map(post => ({
+    ...post.dataValues,
+    imagePath: post.imagePath ? `http://localhost:3001/${(post.imagePath)}` : null  
+  }))
 
-  res.json({ listOfPosts: formattedPosts, formattedLikedPosts: formattedLikedPosts });
+  res.json({ listOfPosts: formattedPosts, formattedLikedPosts: formattedLikedPosts, formattedCollectPosts: formattedCollectPosts });
 } catch (error) {
   console.error("Ошибка при получении списка постов", error)
   res.status(404).json({error: "Ошибка получения постов"})

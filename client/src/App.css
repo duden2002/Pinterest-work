@@ -521,15 +521,15 @@ label {
 
 .profileNavigation svg:focus {
   border-bottom: 3px solid black;
-  padding-bottom: 16px;
 }
+
 
 .underline {
   position: absolute;
-  border-bottom: 2px solid black;
+  border-bottom: 1px solid black;
   width: 100%;
   margin: 1% auto;
-  top: 95%;
+  top: 81%;
 }
 
 /*------------DROPDOWN MENU------------*/

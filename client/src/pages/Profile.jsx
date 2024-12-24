@@ -1,5 +1,4 @@
-import { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../helpers/AuthContext";
+import { useEffect, useState } from "react";
 import FollowersList from "../components/FollowersList";
 import FollowingList from "../components/FollowingList";
 import { useNavigate, useParams } from "react-router-dom";
@@ -8,7 +7,6 @@ import axios from "axios";
 
 function Profile() {
   let navigate = useNavigate();
-  const { authState } = useContext(AuthContext);
   let { id } = useParams();
   const [listOfPosts, setListOfPosts] = useState([]);
   const [userPhoto, setuserPhoto] = useState("");
@@ -18,6 +16,7 @@ function Profile() {
   const [checkUserPick, setCheckUserPick] = useState(false);
   const [userInfo, setUserInfo] = useState();
   const [likedPosts, setLikedPosts] = useState([]);
+  const [collectPosts, setCollectPosts] = useState([]);
   const [changeContent, setChangeContent] = useState("posts");
 
   useEffect(() => {
@@ -29,6 +28,7 @@ function Profile() {
     axios.get(`http://localhost:3001/posts/byuserid/${id}`).then((response) => {
       setListOfPosts(response.data.listOfPosts);
       setLikedPosts(response.data.formattedLikedPosts);
+      setCollectPosts(response.data.formattedCollectPosts);
     });
   }, [id, changeContent]);
 
@@ -112,7 +112,6 @@ function Profile() {
 
   return (
     <div className="profile">
-     
       <div className="basic-info">
         {userPhoto ? (
           <form onSubmit={onSubmit} className="userImage">
@@ -176,108 +175,157 @@ function Profile() {
         </>
         <h1>{userInfo}</h1>
         <div className="profileNavigation">
-        <button onClick={() => setChangeContent("posts")}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="48px"
-            viewBox="0 -960 960 960"
-            width="48px"
-            style = {{fill: changeContent == "posts" ? "#000000" : "#A9A9A9", 
-              borderBottom: changeContent === "posts" ? "2px solid black" : "3px solid transparent",
-              transition: "border-bottom 0.3s ease" }}
-          >
-            <path d="M120-120v-720h720v720H120Zm640-143H200v78h560v-78Zm-560-41h560v-78H200v78Zm0-129h560v-327H200v327Zm0 170v78-78Zm0-41v-78 78Zm0-129v-327 327Zm0 51v-51 51Zm0 119v-41 41Z" />
-          </svg>
-        </button>
-        <button onClick={() => setChangeContent("subscribers")}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="48px"
-            viewBox="0 -960 960 960"
-            width="48px"
-            style = {{fill: changeContent == "subscribers" ? "#000000" : "#A9A9A9", 
-              borderBottom: changeContent === "subscribers" ? "2px solid black" : "3px solid transparent",
-              transition: "border-bottom 0.3s ease"}}
-          >
-            <path d="M38-160v-94q0-35 18-63.5t50-42.5q73-32 131.5-46T358-420q62 0 120 14t131 46q32 14 50.5 42.5T678-254v94H38Zm700 0v-94q0-63-32-103.5T622-423q69 8 130 23.5t99 35.5q33 19 52 47t19 63v94H738ZM358-481q-66 0-108-42t-42-108q0-66 42-108t108-42q66 0 108 42t42 108q0 66-42 108t-108 42Zm360-150q0 66-42 108t-108 42q-11 0-24.5-1.5T519-488q24-25 36.5-61.5T568-631q0-45-12.5-79.5T519-774q11-3 24.5-5t24.5-2q66 0 108 42t42 108ZM98-220h520v-34q0-16-9.5-31T585-306q-72-32-121-43t-106-11q-57 0-106.5 11T130-306q-14 6-23 21t-9 31v34Zm260-321q39 0 64.5-25.5T448-631q0-39-25.5-64.5T358-721q-39 0-64.5 25.5T268-631q0 39 25.5 64.5T358-541Zm0 321Zm0-411Z" />
-          </svg>
-        </button>
-        <button onClick={() => setChangeContent("subscriptions")}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="48px"
-            viewBox="0 -960 960 960"
-            width="48px"
-            style = {{fill: changeContent == "subscriptions" ? "#000000" : "#A9A9A9", 
-              borderBottom: changeContent === "subscriptions" ? "2px solid black" : "3px solid transparent",
-              transition: "border-bottom 0.3s ease"}}
-          >
-            <path d="M51-404q-26-43-38.5-86.5T0-576q0-110 77-187t187-77q63 0 119.5 26t96.5 71q40-45 96.5-71T696-840q110 0 187 77t77 187q0 42-12.5 85T909-405q-10-12-22.5-20.5T860-440q20-35 30-69t10-67q0-85-59.5-144.5T696-780q-55 0-108.5 32.5T480-649q-54-66-107.5-98.5T264-780q-85 0-144.5 59.5T60-576q0 33 10 67t30 69q-14 6-26.5 15T51-404ZM0-80v-53q0-39 42-63t108-24q13 0 24 .5t22 2.5q-8 17-12 34.5t-4 37.5v65H0Zm240 0v-65q0-65 66.5-105T480-290q108 0 174 40t66 105v65H240Zm540 0v-65q0-20-3.5-37.5T765-217q11-2 22-2.5t23-.5q67 0 108.5 24t41.5 63v53H780ZM480-230q-80 0-130 24t-50 61v5h360v-6q0-36-49.5-60T480-230Zm-330-20q-29 0-49.5-20.5T80-320q0-29 20.5-49.5T150-390q29 0 49.5 20.5T220-320q0 29-20.5 49.5T150-250Zm660 0q-29 0-49.5-20.5T740-320q0-29 20.5-49.5T810-390q29 0 49.5 20.5T880-320q0 29-20.5 49.5T810-250Zm-330-70q-50 0-85-35t-35-85q0-51 35-85.5t85-34.5q51 0 85.5 34.5T600-440q0 50-34.5 85T480-320Zm0-180q-25 0-42.5 17T420-440q0 25 17.5 42.5T480-380q26 0 43-17.5t17-42.5q0-26-17-43t-43-17Zm0 60Zm0 300Z" />
-          </svg>
-        </button>
-        <button onClick={() => setChangeContent("likes")}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="48px"
-            viewBox="0 -960 960 960"
-            width="48px"
-            style = {{fill: changeContent == "likes" ? "#000000" : "#A9A9A9", 
-              borderBottom: changeContent === "likes" ? "2px solid black" : "3px solid transparent",
-              transition: "border-bottom 0.3s ease"}}
-          >
-            <path d="m480-121-41-37q-105.77-97.12-174.88-167.56Q195-396 154-451.5T96.5-552Q80-597 80-643q0-90.15 60.5-150.58Q201-854 290-854q57 0 105.5 27t84.5 78q42-54 89-79.5T670-854q89 0 149.5 60.42Q880-733.15 880-643q0 46-16.5 91T806-451.5Q765-396 695.88-325.56 626.77-255.12 521-158l-41 37Zm0-79q101.24-93 166.62-159.5Q712-426 750.5-476t54-89.14q15.5-39.13 15.5-77.72 0-66.14-42-108.64T670.22-794q-51.52 0-95.37 31.5T504-674h-49q-26-56-69.85-88-43.85-32-95.37-32Q224-794 182-751.5t-42 108.82q0 38.68 15.5 78.18 15.5 39.5 54 90T314-358q66 66 166 158Zm0-297Z" />
-          </svg>
-        </button>
-        <div className="underline"></div>
-      </div>
-      {changeContent == "subscribers" && (
-        <FollowersList userId={id} />
-      )}
-      {changeContent == "subscriptions" && (
-        <FollowingList userId={id} />
-      )}
+          <button onClick={() => setChangeContent("posts")}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="48px"
+              viewBox="0 -960 960 960"
+              width="48px"
+              style={{
+                fill: changeContent == "posts" ? "#000000" : "#A9A9A9",
+                borderBottom:
+                  changeContent === "posts" ? "2px solid black" : "transparent",
+                transition: "border-bottom 0.3s ease",
+              }}
+            >
+              <path d="M120-120v-720h720v720H120Zm640-143H200v78h560v-78Zm-560-41h560v-78H200v78Zm0-129h560v-327H200v327Zm0 170v78-78Zm0-41v-78 78Zm0-129v-327 327Zm0 51v-51 51Zm0 119v-41 41Z" />
+            </svg>
+          </button>
+          <button onClick={() => setChangeContent("marks")}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="48px"
+              viewBox="0 -960 960 960"
+              width="48px"
+              style={{
+                fill: changeContent == "marks" ? "#000000" : "#A9A9A9",
+                borderBottom:
+                  changeContent === "marks" ? "2px solid black" : "transparent",
+                transition: "border-bottom 0.3s ease",
+              }}
+            >
+              <path d="M160-80v-581q0-24.75 17.63-42.38Q195.25-721 220-721h360q24.75 0 42.38 17.62Q640-685.75 640-661v581L400-199 160-80Zm60-97 180-89 180 89v-484H220v484Zm520-62v-582H284v-60h456q24.75 0 42.38 17.62Q800-845.75 800-821v582h-60ZM220-661h360-360Z" />
+            </svg>
+          </button>
+          <button onClick={() => setChangeContent("subscribers")}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="48px"
+              viewBox="0 -960 960 960"
+              width="48px"
+              style={{
+                fill: changeContent == "subscribers" ? "#000000" : "#A9A9A9",
+                borderBottom:
+                  changeContent === "subscribers"
+                    ? "2px solid black"
+                    : "transparent",
+                transition: "border-bottom 0.3s ease",
+              }}
+            >
+              <path d="M38-160v-94q0-35 18-63.5t50-42.5q73-32 131.5-46T358-420q62 0 120 14t131 46q32 14 50.5 42.5T678-254v94H38Zm700 0v-94q0-63-32-103.5T622-423q69 8 130 23.5t99 35.5q33 19 52 47t19 63v94H738ZM358-481q-66 0-108-42t-42-108q0-66 42-108t108-42q66 0 108 42t42 108q0 66-42 108t-108 42Zm360-150q0 66-42 108t-108 42q-11 0-24.5-1.5T519-488q24-25 36.5-61.5T568-631q0-45-12.5-79.5T519-774q11-3 24.5-5t24.5-2q66 0 108 42t42 108ZM98-220h520v-34q0-16-9.5-31T585-306q-72-32-121-43t-106-11q-57 0-106.5 11T130-306q-14 6-23 21t-9 31v34Zm260-321q39 0 64.5-25.5T448-631q0-39-25.5-64.5T358-721q-39 0-64.5 25.5T268-631q0 39 25.5 64.5T358-541Zm0 321Zm0-411Z" />
+            </svg>
+          </button>
+          <button onClick={() => setChangeContent("subscriptions")}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="48px"
+              viewBox="0 -960 960 960"
+              width="48px"
+              style={{
+                fill: changeContent == "subscriptions" ? "#000000" : "#A9A9A9",
+                borderBottom:
+                  changeContent === "subscriptions"
+                    ? "2px solid black"
+                    : "transparent",
+                transition: "border-bottom 0.3s ease",
+              }}
+            >
+              <path d="M51-404q-26-43-38.5-86.5T0-576q0-110 77-187t187-77q63 0 119.5 26t96.5 71q40-45 96.5-71T696-840q110 0 187 77t77 187q0 42-12.5 85T909-405q-10-12-22.5-20.5T860-440q20-35 30-69t10-67q0-85-59.5-144.5T696-780q-55 0-108.5 32.5T480-649q-54-66-107.5-98.5T264-780q-85 0-144.5 59.5T60-576q0 33 10 67t30 69q-14 6-26.5 15T51-404ZM0-80v-53q0-39 42-63t108-24q13 0 24 .5t22 2.5q-8 17-12 34.5t-4 37.5v65H0Zm240 0v-65q0-65 66.5-105T480-290q108 0 174 40t66 105v65H240Zm540 0v-65q0-20-3.5-37.5T765-217q11-2 22-2.5t23-.5q67 0 108.5 24t41.5 63v53H780ZM480-230q-80 0-130 24t-50 61v5h360v-6q0-36-49.5-60T480-230Zm-330-20q-29 0-49.5-20.5T80-320q0-29 20.5-49.5T150-390q29 0 49.5 20.5T220-320q0 29-20.5 49.5T150-250Zm660 0q-29 0-49.5-20.5T740-320q0-29 20.5-49.5T810-390q29 0 49.5 20.5T880-320q0 29-20.5 49.5T810-250Zm-330-70q-50 0-85-35t-35-85q0-51 35-85.5t85-34.5q51 0 85.5 34.5T600-440q0 50-34.5 85T480-320Zm0-180q-25 0-42.5 17T420-440q0 25 17.5 42.5T480-380q26 0 43-17.5t17-42.5q0-26-17-43t-43-17Zm0 60Zm0 300Z" />
+            </svg>
+          </button>
+          <button onClick={() => setChangeContent("likes")}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="48px"
+              viewBox="0 -960 960 960"
+              width="48px"
+              style={{
+                fill: changeContent == "likes" ? "#000000" : "#A9A9A9",
+                borderBottom:
+                  changeContent === "likes" ? "2px solid black" : "transparent",
+                transition: "border-bottom 0.3s ease",
+              }}
+            >
+              <path d="m480-121-41-37q-105.77-97.12-174.88-167.56Q195-396 154-451.5T96.5-552Q80-597 80-643q0-90.15 60.5-150.58Q201-854 290-854q57 0 105.5 27t84.5 78q42-54 89-79.5T670-854q89 0 149.5 60.42Q880-733.15 880-643q0 46-16.5 91T806-451.5Q765-396 695.88-325.56 626.77-255.12 521-158l-41 37Zm0-79q101.24-93 166.62-159.5Q712-426 750.5-476t54-89.14q15.5-39.13 15.5-77.72 0-66.14-42-108.64T670.22-794q-51.52 0-95.37 31.5T504-674h-49q-26-56-69.85-88-43.85-32-95.37-32Q224-794 182-751.5t-42 108.82q0 38.68 15.5 78.18 15.5 39.5 54 90T314-358q66 66 166 158Zm0-297Z" />
+            </svg>
+          </button>
+          <div className="underline"></div>
+        </div>
+        {changeContent == "subscribers" && <FollowersList userId={id} />}
+        {changeContent == "subscriptions" && <FollowingList userId={id} />}
       </div>
       {changeContent == "posts" && (
         <>
-      <h1>Посты созданные пользователем {userInfo}</h1>
-      <div className="main-cards">
-        {listOfPosts.map((post) => (
-          <div className="cards" key={post.id}>
-            <div
-              className="card"
-              onClick={() => {
-                navigate(`/post/${post.id}`);
-              }}
-            >
-              <img src={post.imagePath} alt="Пост" />
-              <div>{post.title}</div>
-              <div>{post.username}</div>
-            </div>
+          <h1>Посты созданные пользователем {userInfo}</h1>
+          <div className="main-cards">
+            {listOfPosts.map((post) => (
+              <div className="cards" key={post.id}>
+                <div
+                  className="card"
+                  onClick={() => {
+                    navigate(`/post/${post.id}`);
+                  }}
+                >
+                  <img src={post.imagePath} alt="Пост" />
+                  <div>{post.title}</div>
+                  <div>{post.username}</div>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
         </>
       )}
       {changeContent == "likes" && (
-      <div className="users_likes">
-        <h2>Понравившееся посты</h2>
-        <div className="main-cards">
-          {likedPosts.map((post) => (
-            <div className="cards" key={post.id}>
-              <div
-                className="card"
-                onClick={() => {
-                  navigate(`/post/${post.id}`);
-                }}
-              >
-                <img src={post.imagePath} alt="Пост" />
-                <div>{post.title}</div>
-                <div>{post.username}</div>
+        <div className="users_likes">
+          <h2>Понравившееся посты</h2>
+          <div className="main-cards">
+            {likedPosts.map((post) => (
+              <div className="cards" key={post.id}>
+                <div
+                  className="card"
+                  onClick={() => {
+                    navigate(`/post/${post.id}`);
+                  }}
+                >
+                  <img src={post.imagePath} alt="Пост" />
+                  <div>{post.title}</div>
+                  <div>{post.username}</div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+      {changeContent == "marks" && (
+        <div className="users_likes">
+          <h2>Коллекции</h2>
+          <div className="main-cards">
+            {collectPosts.map((post) => (
+              <div className="cards" key={post.id}>
+                <div
+                  className="card"
+                  onClick={() => {
+                    navigate(`/post/${post.id}`);
+                  }}
+                >
+                  <img src={post.imagePath} alt="Пост" />
+                  <div>{post.title}</div>
+                  <div>{post.username}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
