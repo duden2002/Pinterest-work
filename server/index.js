@@ -28,6 +28,8 @@ const commentsRouter = require("./routes/Comments");
 app.use("/comment", commentsRouter);
 const likesRouter = require('./routes/Likes')
 app.use("/like", likesRouter)
+const collectionsRouter = require('./routes/Collections')
+app.use("/collection", collectionsRouter)
 
 db.sequelize.sync().then(() => {
   app.listen(3001, () => {

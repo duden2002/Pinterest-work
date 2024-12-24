@@ -21,6 +21,9 @@ module.exports = (sequelize, DataTypes) => {
         Users.hasMany(models.Likes, {
             onDelete: "cascade",
         })
+        Users.hasMany(models.Collections, {
+            onDelete: "cascade",
+        })
 
         // Связь many-to-many для подписчиков
         Users.belongsToMany(models.Users, {
