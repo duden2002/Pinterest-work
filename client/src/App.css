@@ -704,6 +704,12 @@ label {
   max-height: 700px;
 }
 
+.folder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Fade-in animation for modal */
 @keyframes modalFadeIn {
   from {
