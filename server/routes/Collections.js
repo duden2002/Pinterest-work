@@ -20,16 +20,34 @@ router.post("/", validateToken, async(req, res) => {
 })
 
 router.put("/addcollection", validateToken, async(req, res) => {
-    const {groupName, id} = req.body;
-    const findPosts = await Collections.findByPk(id);
+    const { PostId, groupName } = req.body; // Получаем ID поста и имя группы
+    const UserId = req.user.id; // ID пользователя из токена
 
-    const updatedData = {};
-    if(groupName) updatedData.groupName = groupName;
+    try {
+        // Проходим по всем PostId и ищем коллекции для каждого PostId и UserId
+        const collections = await Collections.findAll({
+            where: {
+                PostId: PostId, // Здесь мы ищем все коллекции с указанными PostId
+                UserId: UserId   // и для текущего пользователя
+            }
+        });
 
-    await findPosts.update(updatedData);
+        // Если коллекции не найдены
+        if (!collections || collections.length === 0) {
+            return res.status(404).json({ error: "Коллекция не найдена" });
+        }
 
-    res.json({ message: "Пост успешно обновлен", findPosts });
-})
+        // Обновляем каждую коллекцию
+        await Promise.all(collections.map(collection => 
+            collection.update({ groupName }) // Обновляем groupName
+        ));
+
+        res.json({ message: "Коллекция успешно обновлена", collections });
+    } catch (error) {
+        console.error("Ошибка при обновлении группы коллекции:", error);
+        res.status(500).json({ error: "Ошибка сервера" });
+    }
+});
 
 
 module.exports = router;

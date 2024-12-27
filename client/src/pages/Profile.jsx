@@ -18,12 +18,22 @@ function Profile() {
   const [likedPosts, setLikedPosts] = useState([]);
   const [collectPosts, setCollectPosts] = useState([]);
   const [changeContent, setChangeContent] = useState("posts");
+  const [groupName, setGroupName] = useState(""); // для имени новой группы
+  const [showAddGroup, setShowAddGroup] = useState(false);
+  const [addPostId, setAddPostId] = useState([]);
+  const [groupPosts, setGroupPosts] = useState([]);
 
   useEffect(() => {
     axios.get(`http://localhost:3001/auth/basicinfo/${id}`).then((response) => {
       setuserPhoto(response.data.userPhoto);
       setUserInfo(response.data.username);
     });
+
+    axios
+      .get("http://localhost:3001/posts", { withCredentials: true })
+      .then((response) => {
+        setGroupPosts(response.data.filteredGroupArr);
+      });
 
     axios.get(`http://localhost:3001/posts/byuserid/${id}`).then((response) => {
       setListOfPosts(response.data.listOfPosts);
@@ -110,6 +120,59 @@ function Profile() {
     setCheckUserPick(true);
   };
 
+  const addGroupToCollection = async (collectionId) => {
+    try {
+      await axios.put(
+        "http://localhost:3001/collection/addcollection",
+        {
+          PostId: addPostId, // Тело запроса
+          groupName: groupName,
+        },
+        {
+          withCredentials: true, // Включаем отправку cookie
+          headers: {
+            "Content-Type": "application/json", // Указываем тип контента
+          },
+        }
+      );
+      // Обновляем коллекции в UI
+      setCollectPosts(
+        collectPosts.map((collection) =>
+          collection.id === collectionId
+            ? { ...collection, groupName }
+            : collection
+        )
+      );
+      setGroupName("");
+      setShowAddGroup(false);
+    } catch (error) {
+      console.error("Ошибка при добавлении группы в коллекцию:", error);
+    }
+  };
+
+  const showGroup = () => {
+    setShowAddGroup((prev) => !prev);
+    if (showAddGroup === false) {
+      setAddPostId("");
+    }
+  };
+
+  const addPost = (newPost) => {
+    if (addPostId.includes(newPost)) {
+      const index = addPostId.indexOf(newPost);
+      if (index > -1) {
+        // Удаляем элемент с найденного индекса
+        addPostId.splice(index, 1);
+      }
+      console.log("Пост уже выбран", addPostId);
+    } else {
+      setAddPostId((prev) => {
+        const updatedPostId = [...prev, newPost];
+        console.log(updatedPostId); // Теперь будет выводиться правильное обновленное состояние
+        return updatedPostId;
+      });
+    }
+  };
   return (
     <div className="profile">
       <div className="basic-info">
@@ -309,22 +372,84 @@ function Profile() {
       {changeContent == "marks" && (
         <div className="users_likes">
           <h2>Коллекции</h2>
-          <div className="main-cards">
-            {collectPosts.map((post) => (
-              <div className="cards" key={post.id}>
-                <div
-                  className="card"
-                  onClick={() => {
-                    navigate(`/post/${post.id}`);
-                  }}
-                >
-                  <img src={post.imagePath} alt="Пост" />
-                  <div>{post.title}</div>
-                  <div>{post.username}</div>
+          <button
+            onClick={() => {
+              showGroup();
+            }}
+          >
+            Добавить коллекцию
+          </button>
+          {showAddGroup === true ? (
+            <div>
+              <input
+                type="text"
+                placeholder="Введите имя группы"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+              />
+              <button onClick={() => addGroupToCollection(collectPosts.id)}>
+                Добавить группу
+              </button>
+              <div className="main-cards">
+                {collectPosts.map((post) => (
+                  <div className="cards" key={post.id}>
+                    <div
+                      className="card"
+                      onClick={() => {
+                        addPost(post.id);
+                      }}
+                    >
+                      <img src={post.imagePath} alt="Пост" />
+                      <div>{post.title}</div>
+                      <div>{post.username}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div>
+                <h2>Папки:</h2>
+                <div className="folder">
+                  {groupPosts && groupPosts.length > 0 ? (
+                    groupPosts.map((group, index) => (
+                      <div>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          height="200px"
+                          viewBox="0 -960 960 960"
+                          width="200px"
+                          fill="#4B77D1"
+                        >
+                          <path d="M146.67-160q-27 0-46.84-20.17Q80-200.33 80-226.67v-506.66q0-26.34 19.83-46.5Q119.67-800 146.67-800H414l66.67 66.67h332.66q26.34 0 46.5 20.16Q880-693 880-666.67v440q0 26.34-20.17 46.5Q839.67-160 813.33-160H146.67Zm0-66.67h666.66v-440H453l-66.67-66.66H146.67v506.66Zm0 0v-506.66V-226.67Z" />
+                        </svg>
+                        <p key={index}>{group}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p>Группы не найдены.</p>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="main-cards">
+                {collectPosts.map((post) => (
+                  <div className="cards" key={post.id}>
+                    <div
+                      className="card"
+                      onClick={() => {
+                        navigate(`/post/${post.id}`);
+                      }}
+                    >
+                      <img src={post.imagePath} alt="Пост" />
+                      <div>{post.title}</div>
+                      <div>{post.username}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

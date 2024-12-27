@@ -2,6 +2,7 @@ const {verify} = require("jsonwebtoken")
 
 const validateToken = (req, res, next) => {
     const accessToken = req.cookies.accessToken;
+    console.log("Access Token in PUT request:", accessToken); // Логируем токен
     if(!accessToken) return res.json({error: "User not logged in"})
 
     try {
