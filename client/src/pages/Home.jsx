@@ -46,7 +46,6 @@ function Home() {
     const urlParams = new URLSearchParams(location.search);
     const tagsFromURL = urlParams.get("tags");
     if (tagsFromURL) {
-      console.log("dfsdf");
       const tagsToSearch = tagsFromURL
         .split(",")
         .map((tag) => tag.trim())
