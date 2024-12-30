@@ -38,6 +38,13 @@ router.get("/", validateToken, async (req, res) => {
     // Получаем лайки текущего пользователя
     const likedPosts = await Likes.findAll({ where: { UserId: req.user.id }});
     const collect = await Collections.findAll({ where: { UserId: req.user.id }});
+    const group = await Collections.findAll({ where: { UserId: req.user.id, groupName: {[Op.ne]: ""} }});
+    
+    const groupArr = group.map((item) => item.groupName);
+    const filteredGroupArr = [...new Set(groupArr)]
+    console.log("Группа", filteredGroupArr)
+
+    
 
     // Форматируем данные: преобразуем теги в массивы и добавляем путь к изображениям
     const formattedPosts = listOfPosts.map((post) => ({
@@ -56,7 +63,7 @@ router.get("/", validateToken, async (req, res) => {
       : formattedPosts;
 
     // Отправляем данные клиенту
-    res.json({ listOfPosts: filteredPosts, likedPosts, collect });
+    res.json({ listOfPosts: filteredPosts, likedPosts, collect, filteredGroupArr: filteredGroupArr });
   } catch (error) {
     console.error("Ошибка при получении списка постов", error);
     res.status(500).json({ error: "Ошибка получения постов" });
@@ -137,9 +144,10 @@ router.get("/recommendations/:postId", async (req, res) => {
 
 router.get("/byuserId/:id", async (req, res) => {
   const id = req.params.id
-  const listOfPosts = await Posts.findAll({where: {UserId: id}, include: [Likes]});
+  const listOfPosts = await Posts.findAll({where: {UserId: id}});
   let likedPosts = await Likes.findAll({where: {UserId: id}});
   let collectPosts = await Collections.findAll({where: {UserId: id}});
+  let defaultCollectPosts = await Collections.findAll({where: {UserId: id}});
   try{
   const formattedPosts = listOfPosts.map(post => ({
     ...post.dataValues,
@@ -169,7 +177,7 @@ router.get("/byuserId/:id", async (req, res) => {
     imagePath: post.imagePath ? `http://localhost:3001/${(post.imagePath)}` : null  
   }))
 
-  res.json({ listOfPosts: formattedPosts, formattedLikedPosts: formattedLikedPosts, formattedCollectPosts: formattedCollectPosts });
+  res.json({ listOfPosts: formattedPosts, formattedLikedPosts: formattedLikedPosts, formattedCollectPosts: formattedCollectPosts, defaultCollectPosts: defaultCollectPosts });
 } catch (error) {
   console.error("Ошибка при получении списка постов", error)
   res.status(404).json({error: "Ошибка получения постов"})
