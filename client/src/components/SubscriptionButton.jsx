@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { subscribeToUser, unsubscribeFromUser, checkSubscriptionStatus } from "../api";
+import Notifications from '../components/Notifications';
+
 
 const SubscriptionButton = ({ userId, onSubscribe, onUnsubscribe }) => {
+  let checkRef = useRef(null)
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -45,11 +48,25 @@ const SubscriptionButton = ({ userId, onSubscribe, onUnsubscribe }) => {
     return <button disabled>Загрузка...</button>; // Показываем индикатор загрузки
   }
 
+  const clickedButton = () => {
+    if(subscribed) {
+      handleUnsubscribe();
+      checkRef.current.notifyError(`Вы отписались`)
+    } else {
+      handleSubscribe();
+      checkRef.current.notifySuccess("Вы подписались")
+    }
+  }
+
   return (
-    <button onClick={subscribed ? handleUnsubscribe : handleSubscribe}>
-      {subscribed ? "Отписаться" : "Подписаться"}
-    </button>
+  <div>  
+      <Notifications ref={checkRef} />
+      <button className={!subscribed ? "subscriptionButton" : "unSubscriptionButton"} onClick={() => {clickedButton()}}>
+        {subscribed ? "Отписаться" : "Подписаться"}
+      </button>
+  </div>
   );
 };
 
 export default SubscriptionButton;
+

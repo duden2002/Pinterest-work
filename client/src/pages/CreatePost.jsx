@@ -1,38 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Notifications from '../components/Notifications';
 
 function CreatePost() {
   let navigate = useNavigate();
+  let postRef = useRef(null)
   const [title, setTitle] = useState('');
   const [image, setImage] = useState(null);
   const [fileName, setFileName] = useState('');
-  const [tags, setTags] = useState([]); // State to store tags
-  const [tagInput, setTagInput] = useState(''); // State to manage the tag input field
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState('');
+  const [visible, setVisible] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
+    if (file.type.startsWith('image/')) {
       setImage(file);
-      setFileName(file.name); // Set the selected file name
+      setFileName(file.name);
     } else {
-      setFileName(''); // Clear the name if no file is selected
+      setFileName('');
+      postRef.current.notifyError("Выберите картинку формата JPG, JPEG или PNG")
     }
   };
 
   const handleTagChange = (e) => {
-    setTagInput(e.target.value); // Update the tag input
+    setTagInput(e.target.value);
   };
 
   const addTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim().toLowerCase()]); // Add the tag if it's not empty and doesn't already exist
-      setTagInput(''); // Clear the input field after adding
+      setTags([...tags, tagInput.trim().toLowerCase()]);
+      setTagInput('');
+      setVisible(true)
+      setTimeout(() => {
+        setVisible(false);
+      }, 3000);
     }
   };
 
   const removeTag = (tagToRemove) => {
-    setTags(tags.filter(tag => tag !== tagToRemove)); // Remove tag from the list
+    setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
   const onSubmit = (event) => {
@@ -41,23 +49,25 @@ function CreatePost() {
     const formData = new FormData();
     formData.append('title', title);
     formData.append('image', image);
-    formData.append('tags', tags); // Convert tags array to a JSON string
+    formData.append('tags', tags);
 
     axios.post("http://localhost:3001/posts", formData, {
       withCredentials: true,
       headers: { "Content-Type": "multipart/form-data" }
     })
     .then((response) => {
-      console.log("Post created successfully!", response);
+      console.log("Пост создан успешно!", response);
       navigate("/")
+      postRef.current.notifySuccess("Пост создан успешно!");
     })
-    .catch(error => console.error("There was an error uploading the file!", error));
+    .catch(error => postRef.current.notifyError("Ошибка при создании поста: ", error));
   };
 
   return (
     <div className="create">
+      <Notifications ref={postRef} />
       <form className='createForm' onSubmit={onSubmit}>
-        <label className='createForm-label-title'>Title</label>
+        <label className='createForm-label-title'>Название</label>
         <input 
           className='createForm-input-title'
           type="text"
@@ -69,12 +79,13 @@ function CreatePost() {
           <input
             type="file"
             onChange={handleFileChange}
+            accept=".jpg, .jpeg, .png"
           />
           <span>Выберите изображение</span>
         </label>
-        {fileName && <p className="file-name">{fileName}</p>} {/* Display file name */}
+        {fileName && <p className="file-name">{fileName}</p>}
 
-        <label className='createForm-label-tags'>Tags</label>
+        <label className='createForm-label-tags'>Тэги</label>
         <div className="tags-container">
           <input
             type="text"
@@ -85,21 +96,22 @@ function CreatePost() {
           <button
             type="button"
             onClick={addTag}
-            disabled={!tagInput.trim()} // Disable button if input is empty
+            disabled={!tagInput.trim()}
+            className='addTags'
           >
-            Add Tag
+            Добавить тэг
           </button>
         </div>
         <div className="tags-list">
+          <div className={visible ? "tooltip" : "tool-exit"}>Нажмите на тэг чтобы удалить</div>
           {tags.map((tag, index) => (
-            <span key={index} className="tag">
-              {tag} 
-              <button type="button" onClick={() => removeTag(tag)}>X</button>
-            </span>
+              <span key={index} className="tag" onClick={() => removeTag(tag)}>
+                {tag}
+              </span>
           ))}
         </div>
 
-        <button className='btn-create' type="submit" disabled={!image}>Create</button>
+        <button className='btn-create' type="submit" disabled={!image} >Создать</button>
       </form>
     </div>
   );

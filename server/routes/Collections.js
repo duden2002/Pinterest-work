@@ -49,5 +49,70 @@ router.put("/addcollection", validateToken, async(req, res) => {
     }
 });
 
+router.put("/editcollection/:groupName", validateToken, async (req, res) => {
+    const { groupName } = req.params;
+    const newGroupName = req.body.newGroupName;
+  
+    try {
+      const collection = await Collections.findAll({
+        where: {
+          groupName: groupName,
+          UserId: req.user.id,
+        },
+      });
+  
+      if (!collection) {
+        return res.status(404).json({ error: "Папка не найдена" });
+      }
+  
+      await Promise.all(collection.map(collections => 
+        collections.update({ groupName: newGroupName }) // Обновляем groupName
+    ));
+  
+      const updatedCollections = await Collections.findAll({
+        where: {
+          UserId: req.user.id,
+        },
+      });
+  
+      res.json({ message: "Папка успешно обновлена", filteredGroupArr: updatedCollections.map((collection) => collection.groupName) });
+    } catch (error) {
+      console.error("Ошибка при обновлении папки:", error);
+      res.status(500).json({ error: "Ошибка сервера" });
+    }
+  });
+  
+  router.delete("/deletecollection/:groupName", validateToken, async (req, res) => {
+    const { groupName } = req.params;
+  
+    try {
+      const collection = await Collections.findAll({
+        where: {
+          groupName: groupName,
+          UserId: req.user.id,
+        },
+      });
+  
+      if (!collection) {
+        return res.status(404).json({ error: "Папка не найдена" });
+      }
+  
+      await Promise.all(collection.map(collections => 
+        collections.update({ groupName: null })
+    ));
+  
+      const updatedCollections = await Collections.findAll({
+        where: {
+          UserId: req.user.id,
+        },
+      });
+  
+      res.json({ message: "Папка успешно удалена", filteredGroupArr: updatedCollections.map((collection) => collection.groupName) });
+    } catch (error) {
+      console.error("Ошибка при удалении папки:", error);
+      res.status(500).json({ error: "Ошибка сервера" });
+    }
+  });
+
 
 module.exports = router;

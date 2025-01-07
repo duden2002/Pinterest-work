@@ -26,7 +26,9 @@ function Profile() {
   const [clickCollection, setClickCollection] = useState(false);
   const [checkGroup, setCheckGroup] = useState([]);
   const [defaultCollectPosts, setDefaultCollectPosts] = useState([]);
-  const [selectFolder, setSelectFolder] = useState("")
+  const [selectFolder, setSelectFolder] = useState("");
+  const [collect, setCollect] = useState([]);
+  const [clickViewCollect, setClickViewCollect] = useState(false);
 
   useEffect(() => {
     axios.get(`http://localhost:3001/auth/basicinfo/${id}`).then((response) => {
@@ -39,17 +41,18 @@ function Profile() {
       .then((response) => {
         setGroupPosts(response.data.filteredGroupArr);
         setCheckGroup(response.data.listOfPosts);
-        
+        setCollect(response.data.collect);
+        console.log(collect.map((post) => post.groupName));
       });
 
     axios.get(`http://localhost:3001/posts/byuserid/${id}`).then((response) => {
       setListOfPosts(response.data.listOfPosts);
-      
+
       setLikedPosts(response.data.formattedLikedPosts);
       setCollectPosts(response.data.formattedCollectPosts);
-      setDefaultCollectPosts(response.data.defaultCollectPosts)
+      setDefaultCollectPosts(response.data.defaultCollectPosts);
     });
-  }, [id, changeContent]);
+  }, [id, changeContent, addPostId]);
 
   const onCropComplete = (croppedArea, croppedAreaPixels) => {
     setCroppedArea(croppedAreaPixels);
@@ -145,7 +148,7 @@ function Profile() {
         }
       );
       // Обновляем коллекции в UI
-      if(clickCollection === false) {
+      if (clickCollection === false) {
         setCollectPosts(
           collectPosts.map((collection) =>
             collection.id === collectionId
@@ -154,7 +157,6 @@ function Profile() {
           )
         );
       } else {
-        
       }
       setGroupName("");
       setShowAddGroup(false);
@@ -170,20 +172,15 @@ function Profile() {
     }
   };
 
-  const addPost = (newPost) => {
-    if (addPostId.includes(newPost)) {
-      const index = addPostId.indexOf(newPost);
-      if (index > -1) {
-        // Удаляем элемент с найденного индекса
-        addPostId.splice(index, 1);
+  const addPost = (postId) => {
+    setAddPostId((prev) => {
+      // Если пост уже выбран, удаляем его
+      if (prev.includes(postId)) {
+        return prev.filter((id) => id !== postId);
       }
-      console.log("Пост уже выбран", addPostId);
-    } else {
-      setAddPostId((prev) => {
-        const updatedPostId = [...prev, newPost];
-        return updatedPostId;
-      });
-    }
+      // Иначе добавляем пост
+      return [...prev, postId];
+    });
   };
 
   const filteredPosts = (group) => {
@@ -192,60 +189,94 @@ function Profile() {
       return;
     }
 
-    const filtered = defaultCollectPosts.filter((post) => group.includes(post.groupName)).map((post) => ({PostId: post.PostId}));
-    const filteredWithPostDetails = checkGroup
-      .filter((post) => filtered.some((item) => item.PostId === post.id));
+    const filtered = defaultCollectPosts
+      .filter((post) => group.includes(post.groupName))
+      .map((post) => ({ PostId: post.PostId }));
+    const filteredWithPostDetails = checkGroup.filter((post) =>
+      filtered.some((item) => item.PostId === post.id)
+    );
 
     setFilterPosts(filteredWithPostDetails);
-    setClickCollection(!clickCollection)
-    setSelectFolder(group)
+    setClickCollection(!clickCollection);
+    setSelectFolder(group);
+  };
+
+  const editFolder = (folderName) => {
+    const newFolderName = prompt("Введите новое имя папки:");
+    if (newFolderName) {
+      axios.put(`http://localhost:3001/collection/editcollection/${folderName}`, {
+        newGroupName: newFolderName,
+      }, {
+        withCredentials: true,
+      })
+      .then((response) => {
+        console.log(response.data);
+        setGroupPosts(response.data.filteredGroupArr);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+    }
+  };
+  
+  const deleteFolder = (folderName) => {
+    axios.delete(`http://localhost:3001/collection/deletecollection/${folderName}`, {
+      withCredentials: true,
+    })
+    .then((response) => {
+      console.log(response.data);
+      setGroupPosts(response.data.filteredGroupArr);
+    })
+    .catch((error) => {
+      console.error(error);
+    });
   };
   
 
   return (
     <div className="profile">
       <div className="basic-info">
-          <div>
-            <form onSubmit={onSubmit} className="userImage">
-              <input
-                type="file"
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-                id="fileInput"
-                />
-                </form>
-              <div className="userPhotoContainer" onClick={() => clickOnImg()}>
-                  {userPhoto ? (
-                  <img
-                    src={userPhoto}
-                    alt="User Avatar"
-                    className="avatar"
-                    accept="image/*"
-                    />
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      height="154px"
-                      viewBox="0 -960 960 960"
-                      width="154px"
-                      fill="#000000"
-                    >
-                      <path d="M222-255q63-44 125-67.5T480-346q71 0 133.5 23.5T739-255q44-54 62.5-109T820-480q0-145-97.5-242.5T480-820q-145 0-242.5 97.5T140-480q0 61 19 116t63 109Zm257.81-195q-57.81 0-97.31-39.69-39.5-39.68-39.5-97.5 0-57.81 39.69-97.31 39.68-39.5 97.5-39.5 57.81 0 97.31 39.69 39.5 39.68 39.5 97.5 0 57.81-39.69 97.31-39.68 39.5-97.5 39.5Zm.66 370Q398-80 325-111.5t-127.5-86q-54.5-54.5-86-127.27Q80-397.53 80-480.27 80-563 111.5-635.5q31.5-72.5 86-127t127.27-86q72.76-31.5 155.5-31.5 82.73 0 155.23 31.5 72.5 31.5 127 86t86 127.03q31.5 72.53 31.5 155T848.5-325q-31.5 73-86 127.5t-127.03 86Q562.94-80 480.47-80Zm-.47-60q55 0 107.5-16T691-212q-51-36-104-55t-107-19q-54 0-107 19t-104 55q51 40 103.5 56T480-140Zm0-370q34 0 55.5-21.5T557-587q0-34-21.5-55.5T480-664q-34 0-55.5 21.5T403-587q0 34 21.5 55.5T480-510Zm0-77Zm0 374Z" />
-                    </svg>
-                  )}
-                  <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="80px"
-                  viewBox="0 -960 960 960"
-                  width="80px"
-                  fill="#FFFFFF"
-                  className="userpick"
-                  >
-                  <path d="M453-280h60v-166h167v-60H513v-174h-60v174H280v60h173v166Zm27.27 200q-82.74 0-155.5-31.5Q252-143 197.5-197.5t-86-127.34Q80-397.68 80-480.5t31.5-155.66Q143-709 197.5-763t127.34-85.5Q397.68-880 480.5-880t155.66 31.5Q709-817 763-763t85.5 127Q880-563 880-480.27q0 82.74-31.5 155.5Q817-252 763-197.68q-54 54.31-127 86Q563-80 480.27-80Zm.23-60Q622-140 721-239.5t99-241Q820-622 721.19-721T480-820q-141 0-240.5 98.81T140-480q0 141 99.5 240.5t241 99.5Zm-.5-340Z" />
-                </svg>
-                <div className="backCircle"></div>
-                </div>
-                </div>
+        <div>
+          <form onSubmit={onSubmit} className="userImage">
+            <input
+              type="file"
+              onChange={handleFileChange}
+              style={{ display: "none" }}
+              id="fileInput"
+            />
+          </form>
+          <div className="userPhotoContainer" onClick={() => clickOnImg()}>
+            {userPhoto ? (
+              <img
+                src={userPhoto}
+                alt="User Avatar"
+                className="avatar"
+                accept="image/*"
+              />
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="154px"
+                viewBox="0 -960 960 960"
+                width="154px"
+                fill="#000000"
+              >
+                <path d="M222-255q63-44 125-67.5T480-346q71 0 133.5 23.5T739-255q44-54 62.5-109T820-480q0-145-97.5-242.5T480-820q-145 0-242.5 97.5T140-480q0 61 19 116t63 109Zm257.81-195q-57.81 0-97.31-39.69-39.5-39.68-39.5-97.5 0-57.81 39.69-97.31 39.68-39.5 97.5-39.5 57.81 0 97.31 39.69 39.5 39.68 39.5 97.5 0 57.81-39.69 97.31-39.68 39.5-97.5 39.5Zm.66 370Q398-80 325-111.5t-127.5-86q-54.5-54.5-86-127.27Q80-397.53 80-480.27 80-563 111.5-635.5q31.5-72.5 86-127t127.27-86q72.76-31.5 155.5-31.5 82.73 0 155.23 31.5 72.5 31.5 127 86t86 127.03q31.5 72.53 31.5 155T848.5-325q-31.5 73-86 127.5t-127.03 86Q562.94-80 480.47-80Zm-.47-60q55 0 107.5-16T691-212q-51-36-104-55t-107-19q-54 0-107 19t-104 55q51 40 103.5 56T480-140Zm0-370q34 0 55.5-21.5T557-587q0-34-21.5-55.5T480-664q-34 0-55.5 21.5T403-587q0 34 21.5 55.5T480-510Zm0-77Zm0 374Z" />
+              </svg>
+            )}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="80px"
+              viewBox="0 -960 960 960"
+              width="80px"
+              fill="#FFFFFF"
+              className="userpick"
+            >
+              <path d="M453-280h60v-166h167v-60H513v-174h-60v174H280v60h173v166Zm27.27 200q-82.74 0-155.5-31.5Q252-143 197.5-197.5t-86-127.34Q80-397.68 80-480.5t31.5-155.66Q143-709 197.5-763t127.34-85.5Q397.68-880 480.5-880t155.66 31.5Q709-817 763-763t85.5 127Q880-563 880-480.27q0 82.74-31.5 155.5Q817-252 763-197.68q-54 54.31-127 86Q563-80 480.27-80Zm.23-60Q622-140 721-239.5t99-241Q820-622 721.19-721T480-820q-141 0-240.5 98.81T140-480q0 141 99.5 240.5t241 99.5Zm-.5-340Z" />
+            </svg>
+            <div className="backCircle"></div>
+          </div>
+        </div>
         <>
           {checkUserPick && (
             <form onSubmit={onSubmit} className="cropper">
@@ -431,7 +462,21 @@ function Profile() {
                         addPost(post.id);
                       }}
                     >
-                      <img src={post.imagePath} alt="Пост" />
+                      <div className="imgConatainer">
+                        <img src={post.imagePath} alt="Пост" />
+                        {addPostId.includes(post.id) && (
+                          <svg
+                            className="plus"
+                            xmlns="http://www.w3.org/2000/svg"
+                            height="70px"
+                            viewBox="0 -960 960 960"
+                            width="70px"
+                            fill="#0000ff"
+                          >
+                            <path d="M715-603.33 606.67-711.67l46.66-47.66L715-697.67l145.67-146.66 47.66 47.66L715-603.33ZM200-120v-656.67q0-27 19.83-46.83 19.84-19.83 46.84-19.83H540v66.66H266.67v555.34L480-312l213.33 90.67v-315.34H760V-120L480-240 200-120Zm66.67-656.67H540 266.67Z" />
+                          </svg>
+                        )}
+                      </div>
                       <div>{post.title}</div>
                       <div>{post.username}</div>
                     </div>
@@ -446,64 +491,88 @@ function Profile() {
                 <div className="folder">
                   {groupPosts && groupPosts.length > 0 ? (
                     groupPosts.map((group, index) => (
-                      <div onClick={() => {filteredPosts(group)}}>
+                      <div className="folders" style={{boxShadow: selectFolder == group && clickCollection == true ? "0px 0px 12px rgba(0, 0, 0, 0.4)" : ""}}
+                        onClick={() => {
+                          filteredPosts(group);
+                        }}
+                      >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           height="200px"
                           viewBox="0 -960 960 960"
                           width="200px"
-                          style={{
-                            fill: selectFolder == group && clickCollection == true ? "#57d97d" : "#0052ff",
-                          }}
+                          fill="#0052ff"
                         >
                           <path d="M146.67-160q-27 0-46.84-20.17Q80-200.33 80-226.67v-506.66q0-26.34 19.83-46.5Q119.67-800 146.67-800H414l66.67 66.67h332.66q26.34 0 46.5 20.16Q880-693 880-666.67v440q0 26.34-20.17 46.5Q839.67-160 813.33-160H146.67Zm0-66.67h666.66v-440H453l-66.67-66.66H146.67v506.66Zm0 0v-506.66V-226.67Z" />
                         </svg>
                         <p key={index}>{group}</p>
+                        {selectFolder == group && clickCollection && (
+                        <div className="folder_buttons">
+                          <div className="line"></div>
+                          <button className="edit-folder folder_btn" onClick={() => editFolder(group)}>Редактировать</button>
+                          <button className="delete-folder folder_btn" onClick={() => deleteFolder(group)}>Удалить</button>
+                        </div>
+                        )}
                       </div>
                     ))
                   ) : (
                     <p>Папки не найдены.</p>
                   )}
                 </div>
+                {!clickCollection && (
+                <button
+                  className="showGroupName"
+                  onClick={() => setClickViewCollect(!clickViewCollect)}
+                >
+                  Показать имена групп
+                </button>
+                )}
               </div>
               {clickCollection && (
-                  <div className="collection">
+                <div className="collection">
                   <h2>Выбранная папка: {selectFolder}</h2>
-                <div className="main-cards">
-                {filterPosts.map((post) => (
-                  <div className="cards" key={post.id}>
-                    <div
-                      className="card"
-                      onClick={() => {
-                        navigate(`/post/${post.id}`);
-                      }}
-                      >
-                      <img src={post.imagePath} alt="Пост" />
-                      <div>{post.title}</div>
-                      <div>{post.username}</div>
-                    </div>
+                  <div className="main-cards">
+                    {filterPosts.map((post) => (
+                      <div className="cards" key={post.id}>
+                        <div
+                          className="card"
+                          onClick={() => {
+                            navigate(`/post/${post.id}`);
+                          }}
+                        >
+                          <img src={post.imagePath} alt="Пост" />
+                          <div>{post.title}</div>
+                          <div>{post.username}</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
                 </div>
               )}
               {!clickCollection && (
-              <div className="main-cards">
-                {collectPosts.map((post) => (
-                  <div className="cards" key={post.id}>
-                    <div
-                      className="card"
-                      onClick={() => {
-                        navigate(`/post/${post.id}`);
-                      }}
-                    >
-                      <img src={post.imagePath} alt="Пост" />
-                      <div>{post.title}</div>
-                      <div>{post.username}</div>
+                <div className="main-cards">
+                  {collectPosts.map((post) => (
+                    <div className="cards" key={post.id}>
+                      <div
+                        className="card"
+                        onClick={() => {
+                          navigate(`/post/${post.id}`);
+                        }}
+                      >
+                        {clickViewCollect && (
+                          <p className="nameGroup">
+                            {collect.map((col) =>
+                              post.id === col.PostId ? col.groupName : ""
+                            )}
+                          </p>
+                        )}
+                        <img src={post.imagePath} alt="Пост" />
+                        <div>{post.title}</div>
+                        <div>{post.username}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
               )}
             </div>
           )}

@@ -182,8 +182,9 @@ router.get("/subscriptions/status/:userId", validateToken, async (req, res) => {
       },
     });
 
-    res.json({ isSubscribed: !!subscription }); // Вернет true или false
-    console.log(subscription)
+
+    res.json({ isSubscribed: !!subscription, subscribed: subscription }); // Вернет true или false
+    console.log("sdfsdff", subscription)
   } catch (error) {
     console.error("Ошибка проверки статуса подписки:", error);
     res.status(500).json({ error: "Не удалось проверить статус подписки" });

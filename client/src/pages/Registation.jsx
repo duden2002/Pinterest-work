@@ -3,16 +3,25 @@ import {Formik, Form, Field, ErrorMessage} from 'formik'
 import * as Yup from 'yup'
 import axios from 'axios'
 import logo from "../assets/logo.png"
+import Notifications from '../components/Notifications';
+import { useRef } from 'react'
 
-function Registation({closeModal}) {
+function Registation({closeModal, openLogin}) {
+  let regRef = useRef(null)
   const initialValues = {
     username: "",
     password: "",
   }
   const onSubmit = (data) => {
     axios.post("http://localhost:3001/auth", data).then((response) => {
-      console.log("User Created")
-      closeModal()
+      if (response.data.error) {
+        authRef.current.notifyError("Ошибка")
+      } else {
+        console.log("User Created")
+        closeModal()
+        openLogin()
+        regRef.current.notifySuccess("Регистрация прошла успешно!")
+      }
     })
   }
 
@@ -23,6 +32,7 @@ function Registation({closeModal}) {
 
   return (
     <div>
+      <Notifications ref={regRef} />
       <Formik initialValues={initialValues} onSubmit={onSubmit} validationSchema={validationShema}>
         <Form className='form'>
           <img src={logo} alt="logo" />
@@ -34,6 +44,7 @@ function Registation({closeModal}) {
             <label>Пароль: </label>
             <Field className="input" name="password" placeholder="Пароль" type="password" />
             <button className='btn' type='submit'>Регистрация</button>
+            <p className='linkTo'>Уже есть аккаунт? <span className="link" onClick={openLogin}>Войти</span></p>
           </div>
         </Form>
       </Formik>

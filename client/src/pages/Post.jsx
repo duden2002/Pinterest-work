@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import axios from "axios";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { AuthContext } from "../helpers/AuthContext";
@@ -19,9 +19,10 @@ function Post() {
   const [checkComment, setCheckComment] = useState(false);
   const { authState } = useContext(AuthContext);
   const [username, setUsername] = useState({});
+  const [subUser, setSubUser] = useState({})
   const [checkSubscribe, setCheckSubscribe] = useState(false);
   const [userPhoto, setUserPhoto] = useState("");
-  const [recommendations, setRecommendations] = useState([]); // Новый стейт для рекомендаций
+  const [recommendations, setRecommendations] = useState([]);
 
   useEffect(() => {
     axios.get(`http://localhost:3001/posts/byId/${id}`).then((response) => {
@@ -47,6 +48,7 @@ function Post() {
         })
         .then((response) => {
           setCheckSubscribe(response.data.isSubscribed);
+          setSubUser(response.data.subscribed)
           console.log(checkSubscribe);
         })
         .catch((error) => {
@@ -63,7 +65,7 @@ function Post() {
       .catch((error) =>
         console.error("Ошибка при получении рекомендаций:", error)
       );
-      window.scrollTo(0, 0);
+    window.scrollTo(0, 0);
   }, [id, checkComment]);
 
   axios
@@ -217,6 +219,8 @@ function Post() {
               isSubscribed={checkSubscribe}
               onSubscribe={() => setCheckSubscribe(true)}
               onUnsubscribe={() => setCheckSubscribe(false)}
+              subUser={subUser}
+              
             />
             <div className="change-block">
               {authState.username === postObject.username && (
@@ -295,12 +299,34 @@ function Post() {
                   setNewComment(event.target.value);
                 }}
               />
-              <input
-                type="file"
-                onChange={(e) => setImage(e.target.files[0])}
-              />
-              <button className="edit-btn" onClick={addComment}>
-                Add Comment
+              <label>
+                <input
+                  type="file"
+                  onChange={(e) => setImage(e.target.files[0])}
+                  style={{ display: "none" }}
+                />
+                <span className="clip">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="32px"
+                    viewBox="0 -960 960 960"
+                    width="32px"
+                    fill="#000000"
+                  >
+                    <path d="M725.33-327.33q0 103.33-72.45 175.33-72.45 72-175.66 72Q374-80 301.33-152q-72.66-72-72.66-175.33V-704q0-73.33 51.83-124.67Q332.33-880 405.33-880t124.84 51.33Q582-777.33 582-704v356.67q0 43.33-30.67 74-30.66 30.66-74.33 30.66t-74.33-30.45Q372-303.56 372-347.33v-370h66.67v370q0 15.66 11.16 26.83 11.17 11.17 27.6 11.17 16.42 0 27.16-11.17 10.74-11.17 10.74-26.83V-704q-.33-46-32.16-77.67-31.84-31.66-77.98-31.66t-78 31.7q-31.86 31.71-31.86 77.63v376.67q-.33 75.66 52.98 128.16 53.32 52.5 129.02 52.5 75.28 0 127.98-52.5 52.69-52.5 53.36-128.16v-390h66.66v390Z" />
+                  </svg>
+                </span>
+              </label>
+              <button className="send-button" onClick={addComment}>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  height="24px"
+                  viewBox="0 -960 960 960"
+                  width="24px"
+                  fill="#000000"
+                >
+                  <path d="M120-160v-640l760 320-760 320Zm80-120 474-200-474-200v140l240 60-240 60v140Zm0 0v-400 400Z" />
+                </svg>
               </button>
               {error && <div style={{ color: "red" }}>{error}</div>}
               {/* Сообщение об ошибке */}
@@ -325,7 +351,7 @@ function Post() {
                           deleteComment(comment.id);
                         }}
                       >
-                        X
+                        Удалить комментарий
                       </button>
                     )}
                     {/*Передаем id комментария через функцию*/}
@@ -344,10 +370,11 @@ function Post() {
             {recommendations.map((rec) => (
               <div key={rec.id} className="recommendation-item">
                 {rec.imagePath && (
-                  <img onClick={() => navigate(`/post/${rec.id}`)}
-                  src={rec.imagePath}
-                  alt={rec.title}
-                  style={{ maxWidth: "100%", height: "auto" }}
+                  <img
+                    onClick={() => navigate(`/post/${rec.id}`)}
+                    src={rec.imagePath}
+                    alt={rec.title}
+                    style={{ maxWidth: "100%", height: "auto" }}
                   />
                 )}
                 <h3 onClick={() => navigate(`/post/${rec.id}`)}>{rec.title}</h3>
