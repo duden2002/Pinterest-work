@@ -50,22 +50,22 @@ router.put("/addcollection", validateToken, async(req, res) => {
 });
 
 router.put("/editcollection/:groupName", validateToken, async (req, res) => {
-    const { groupName } = req.params;
     const newGroupName = req.body.newGroupName;
+    const PostId = req.body.PostId;
   
     try {
-      const collection = await Collections.findAll({
+      const otherCollections = await Collections.findAll({
         where: {
-          groupName: groupName,
+          PostId: PostId,
           UserId: req.user.id,
-        },
-      });
+        }
+      })
   
-      if (!collection) {
+      if (!otherCollections) {
         return res.status(404).json({ error: "Папка не найдена" });
       }
   
-      await Promise.all(collection.map(collections => 
+      await Promise.all(otherCollections.map(collections => 
         collections.update({ groupName: newGroupName }) // Обновляем groupName
     ));
   

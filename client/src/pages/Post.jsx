@@ -49,7 +49,6 @@ function Post() {
         .then((response) => {
           setCheckSubscribe(response.data.isSubscribed);
           setSubUser(response.data.subscribed)
-          console.log(checkSubscribe);
         })
         .catch((error) => {
           console.error("Ошибка проверки статуса подписки", error);
@@ -172,6 +171,7 @@ function Post() {
       });
   };
 
+
   return (
     <div className="posts">
       <div className="post">
@@ -220,6 +220,7 @@ function Post() {
               onSubscribe={() => setCheckSubscribe(true)}
               onUnsubscribe={() => setCheckSubscribe(false)}
               subUser={subUser}
+              username={postObject.username}
               
             />
             <div className="change-block">

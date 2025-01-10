@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Posts, Likes, Collections } = require("../models");
+const { Posts, Likes, Collections, Users } = require("../models");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs")
@@ -35,6 +35,8 @@ router.get("/", validateToken, async (req, res) => {
       ],
     });
 
+    
+
     // Получаем лайки текущего пользователя
     const likedPosts = await Likes.findAll({ where: { UserId: req.user.id }});
     const collect = await Collections.findAll({ where: { UserId: req.user.id }});
@@ -61,6 +63,15 @@ router.get("/", validateToken, async (req, res) => {
           post.tags.some((tag) => tagArray.includes(tag))
         )
       : formattedPosts;
+
+      // const user = await Users.findAll({
+      //   where: {username: filteredPosts.username},
+      //   attributes: ['userPhoto']
+      // })
+  
+      // const userImage = user.map((users) => users.dataValues.userPhoto)
+  
+      // console.log(userImage)
 
     // Отправляем данные клиенту
     res.json({ listOfPosts: filteredPosts, likedPosts, collect, filteredGroupArr: filteredGroupArr });

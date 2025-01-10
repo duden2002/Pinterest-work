@@ -199,12 +199,24 @@ router.get("/followers/:userId", async (req, res) => {
     const user = await Users.findByPk(userId, {
       include: [{ model: Users, as: "Followers" }], // Загрузка подписчиков
     });
+    
 
     if (!user) {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
+   
+    console.log(user.Followers.map((user) => user.dataValues))
 
-    res.json(user.Followers);
+    const usersPhotos = user.Followers.map((user) => ({
+      ...user.dataValues,
+      userPhoto: user.userPhoto 
+      ? `http://localhost:3001/${user.userPhoto}`.replace("\\", "/")
+      : null
+    }))
+
+    console.log(usersPhotos)
+
+    res.json(usersPhotos);
   } catch (error) {
     console.error("Ошибка получения подписчиков:", error);
     res.status(500).json({ error: "Не удалось получить подписчиков" });
@@ -224,7 +236,14 @@ router.get("/following/:userId", async (req, res) => {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
-    res.json(user.Following);
+    const usersPhotos = user.Following.map((user) => ({
+      ...user.dataValues,
+      userPhoto: user.userPhoto 
+      ? `http://localhost:3001/${user.userPhoto}`.replace("\\", "/")
+      : null
+    }))
+
+    res.json(usersPhotos);
   } catch (error) {
     console.error("Ошибка получения подписок:", error);
     res.status(500).json({ error: "Не удалось получить подписки" });

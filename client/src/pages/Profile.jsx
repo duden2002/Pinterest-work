@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import FollowersList from "../components/FollowersList";
 import FollowingList from "../components/FollowingList";
 import { useNavigate, useParams } from "react-router-dom";
 import Cropper from "react-easy-crop";
 import axios from "axios";
+import Notifications from '../components/Notifications';
+import SubscriptionButton from '../components/SubscriptionButton';
 
 function Profile() {
   let navigate = useNavigate();
   let { id } = useParams();
+  let postRef = useRef(null)
   const [listOfPosts, setListOfPosts] = useState([]);
   const [userPhoto, setuserPhoto] = useState("");
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -29,6 +32,10 @@ function Profile() {
   const [selectFolder, setSelectFolder] = useState("");
   const [collect, setCollect] = useState([]);
   const [clickViewCollect, setClickViewCollect] = useState(false);
+  const [showEditFolder, setShowEditFolder] = useState(false);
+  const [focus, setFocus] = useState(false);
+  const [newNameFolder, setNewNameFolder] = useState("");
+  const [updateContent, setUpdateContent] = useState(false)
 
   useEffect(() => {
     axios.get(`http://localhost:3001/auth/basicinfo/${id}`).then((response) => {
@@ -42,7 +49,6 @@ function Profile() {
         setGroupPosts(response.data.filteredGroupArr);
         setCheckGroup(response.data.listOfPosts);
         setCollect(response.data.collect);
-        console.log(collect.map((post) => post.groupName));
       });
 
     axios.get(`http://localhost:3001/posts/byuserid/${id}`).then((response) => {
@@ -52,7 +58,7 @@ function Profile() {
       setCollectPosts(response.data.formattedCollectPosts);
       setDefaultCollectPosts(response.data.defaultCollectPosts);
     });
-  }, [id, changeContent, addPostId]);
+  }, [id, changeContent, addPostId, showEditFolder, updateContent]);
 
   const onCropComplete = (croppedArea, croppedAreaPixels) => {
     setCroppedArea(croppedAreaPixels);
@@ -156,6 +162,7 @@ function Profile() {
               : collection
           )
         );
+        setUpdateContent(!updateContent)
       } else {
       }
       setGroupName("");
@@ -164,6 +171,10 @@ function Profile() {
       console.error("Ошибка при добавлении группы в коллекцию:", error);
     }
   };
+
+  const updateChangeContent = (newData) => {
+    setChangeContent(newData);
+  }
 
   const showGroup = () => {
     setShowAddGroup((prev) => !prev);
@@ -174,13 +185,16 @@ function Profile() {
 
   const addPost = (postId) => {
     setAddPostId((prev) => {
-      // Если пост уже выбран, удаляем его
-      if (prev.includes(postId)) {
-        return prev.filter((id) => id !== postId);
-      }
-      // Иначе добавляем пост
-      return [...prev, postId];
+      // Если showEditFolder активен, добавляем все посты из filterPosts
+        // Если showEditFolder выключен или уже были данные
+        return prev.includes(postId)
+          ? prev.filter((id) => id !== postId) // Удаляем пост
+          : [...prev, postId]; // Добавляем пост
+      
     });
+
+    // Лог для проверки
+    console.log("Посты: ", addPostId);
   };
 
   const filteredPosts = (group) => {
@@ -202,39 +216,96 @@ function Profile() {
   };
 
   const editFolder = (folderName) => {
-    const newFolderName = prompt("Введите новое имя папки:");
-    if (newFolderName) {
-      axios.put(`http://localhost:3001/collection/editcollection/${folderName}`, {
-        newGroupName: newFolderName,
-      }, {
-        withCredentials: true,
-      })
+    const newFolderName = !newNameFolder ? selectFolder : newNameFolder;
+    console.log("Имя группы",selectFolder)
+    console.log("Имя инпута",newNameFolder)
+    if(addPostId.length === 0) {
+      postRef.current.notifyError("Выберите посты")
+    } else {
+      if (newFolderName) {
+        axios
+          .put(
+            `http://localhost:3001/collection/editcollection/${folderName}`,
+            {
+              newGroupName: newFolderName,
+              PostId: addPostId,
+            },
+            {
+              withCredentials: true,
+            }
+          )
+          .then((response) => {
+            console.log(response.data);
+            setGroupPosts(response.data.filteredGroupArr);
+            setShowEditFolder(false);
+            setFocus(false)
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+      // Удалить groupName у постов, которые были удалены из папки
+      const postsToRemove = defaultCollectPosts.filter((post) => {
+        return !addPostId.includes(post.PostId);
+      });
+  
+      if (postsToRemove.length > 0) {
+        axios
+          .put(
+            `http://localhost:3001/collection/editcollection/${folderName}`,
+            {
+              newGroupName: null,
+              PostId: postsToRemove.map((post) => post.PostId),
+            },
+            {
+              withCredentials: true,
+            }
+          )
+          .then((response) => {
+            console.log(response.data);
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+
+    }
+
+  };
+
+  const deleteFolder = (folderName) => {
+    axios
+      .delete(
+        `http://localhost:3001/collection/deletecollection/${folderName}`,
+        {
+          withCredentials: true,
+        }
+      )
       .then((response) => {
         console.log(response.data);
         setGroupPosts(response.data.filteredGroupArr);
+        setUpdateContent(!updateContent)
       })
       .catch((error) => {
         console.error(error);
       });
-    }
   };
-  
-  const deleteFolder = (folderName) => {
-    axios.delete(`http://localhost:3001/collection/deletecollection/${folderName}`, {
-      withCredentials: true,
-    })
-    .then((response) => {
-      console.log(response.data);
-      setGroupPosts(response.data.filteredGroupArr);
-    })
-    .catch((error) => {
-      console.error(error);
-    });
+
+  const handleEditFolder = () => {
+    setAddPostId(filterPosts.map((post) => post.id));
+    setShowEditFolder(true);
   };
+
+  const closeModal = () => {
+    setShowEditFolder(false)
+    setFocus(false)
+    
+  }
   
 
   return (
     <div className="profile">
+      <Notifications ref={postRef} />
       <div className="basic-info">
         <div>
           <form onSubmit={onSubmit} className="userImage">
@@ -300,6 +371,9 @@ function Profile() {
           )}
         </>
         <h1>{userInfo}</h1>
+
+          <SubscriptionButton userId={id} visible={true} username={userInfo}/>
+
         <div className="profileNavigation">
           <button onClick={() => setChangeContent("posts")}>
             <svg
@@ -387,12 +461,12 @@ function Profile() {
           </button>
           <div className="underline"></div>
         </div>
-        {changeContent == "subscribers" && <FollowersList userId={id} />}
-        {changeContent == "subscriptions" && <FollowingList userId={id} />}
+        {changeContent == "subscribers" && <FollowersList userId={id} content={updateChangeContent} />}
+        {changeContent == "subscriptions" && <FollowingList userId={id} content={updateChangeContent} />}
       </div>
       {changeContent == "posts" && (
         <>
-          <h1>Посты созданные пользователем {userInfo}</h1>
+          <h1 className="postsInfo">Посты созданные пользователем {userInfo}</h1>
           <div className="main-cards">
             {listOfPosts.map((post) => (
               <div className="cards" key={post.id}>
@@ -436,23 +510,32 @@ function Profile() {
         <div className="users_likes">
           <h2>Коллекции</h2>
           <button
+            className="addCollectionBtn"
             onClick={() => {
               showGroup();
             }}
           >
-            Добавить коллекцию
+            {showAddGroup ? "Закрыть" : "Добавить коллекцию"}
           </button>
           {showAddGroup === true ? (
-            <div>
+            <div className="inCollection">
+              <h3>Добавление новой папки коллекций</h3>
               <input
+                className="inputAddGroup"
                 type="text"
                 placeholder="Введите имя группы"
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
               />
-              <button onClick={() => addGroupToCollection(collectPosts.id)}>
+              <button
+                className="addGroupBtn"
+                onClick={() => addGroupToCollection(collectPosts.id)}
+              >
                 Добавить группу
               </button>
+              <div className="collectionsNotify">
+                <h3>Выберите посты из списка ниже и назовите свою коллекцию</h3>
+              </div>
               <div className="main-cards">
                 {collectPosts.map((post) => (
                   <div className="cards" key={post.id}>
@@ -468,12 +551,12 @@ function Profile() {
                           <svg
                             className="plus"
                             xmlns="http://www.w3.org/2000/svg"
-                            height="70px"
+                            height="80px"
                             viewBox="0 -960 960 960"
-                            width="70px"
-                            fill="#0000ff"
+                            width="80px"
+                            fill="#ffffff"
                           >
-                            <path d="M715-603.33 606.67-711.67l46.66-47.66L715-697.67l145.67-146.66 47.66 47.66L715-603.33ZM200-120v-656.67q0-27 19.83-46.83 19.84-19.83 46.84-19.83H540v66.66H266.67v555.34L480-312l213.33 90.67v-315.34H760V-120L480-240 200-120Zm66.67-656.67H540 266.67Z" />
+                            <path d="M200-120v-640q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v640L480-240 200-120Z" />
                           </svg>
                         )}
                       </div>
@@ -491,7 +574,14 @@ function Profile() {
                 <div className="folder">
                   {groupPosts && groupPosts.length > 0 ? (
                     groupPosts.map((group, index) => (
-                      <div className="folders" style={{boxShadow: selectFolder == group && clickCollection == true ? "0px 0px 12px rgba(0, 0, 0, 0.4)" : ""}}
+                      <div
+                        className="folders"
+                        style={{
+                          boxShadow:
+                            selectFolder == group && clickCollection == true
+                              ? "0px 0px 12px rgba(0, 0, 0, 0.4)"
+                              : "",
+                        }}
                         onClick={() => {
                           filteredPosts(group);
                         }}
@@ -507,11 +597,87 @@ function Profile() {
                         </svg>
                         <p key={index}>{group}</p>
                         {selectFolder == group && clickCollection && (
-                        <div className="folder_buttons">
-                          <div className="line"></div>
-                          <button className="edit-folder folder_btn" onClick={() => editFolder(group)}>Редактировать</button>
-                          <button className="delete-folder folder_btn" onClick={() => deleteFolder(group)}>Удалить</button>
-                        </div>
+                          <div className="folder_buttons">
+                            <div className="line"></div>
+                            <button
+                              className="edit-folder folder_btn"
+                              onClick={handleEditFolder}
+                            >
+                              Редактировать
+                            </button>
+                            <button
+                              className="delete-folder folder_btn"
+                              onClick={() => deleteFolder(group)}
+                            >
+                              Удалить
+                            </button>
+                          </div>
+                        )}
+
+                        {/*МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ ПАПКИ КОЛЛЕКЦИЙ*/}
+                        {showEditFolder && (
+                          <div
+                            className="editFolder"
+                            onClick={() => closeModal()}
+                          >
+                            <div
+                              className="editFolderWindow"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <h3 className="nameFolderEdit">Редактирование папки <span>{group}</span></h3>
+                              <input
+                                className="editInput"
+                                onFocus={() => setFocus(true)}
+                                type="text"
+                                placeholder="Введите новое название папки"
+                                onChange={(e) =>
+                                  setNewNameFolder(e.target.value)
+                                }
+                              />
+                              <div id="comment_bubble" style={{display: focus ? "none" : "block"}}>Если не ввести новое название тогда сохраниться прежнее</div>
+                               <button
+                              className="editFolderSaveBtn"
+                                type="button"
+                                onClick={() => {
+                                  editFolder(group);
+                                }}
+                              >
+                                Сохранить изменения
+                              </button>
+                              <div className="main-cards">
+                                {collectPosts.map((post) => (
+                                  <div className="cards" key={post.id}>
+                                    <div
+                                      className="card"
+                                      onClick={() => {
+                                        addPost(post.id);
+                                      }}
+                                    >
+                                      <div className="imgConatainer">
+                                        <img src={post.imagePath} alt="Пост" />
+
+                                        {addPostId.includes(post.id) && (
+                                          <svg
+                                            className="plus"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            height="80px"
+                                            viewBox="0 -960 960 960"
+                                            width="80px"
+                                            fill="#ffffff"
+                                          >
+                                            <path d="M200-120v-640q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v640L480-240 200-120Z" />
+                                          </svg>
+                                        )}
+                                      </div>
+                                      <div>{post.title}</div>
+                                      <div>{post.username}</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                             
+                            </div>
+                          </div>
                         )}
                       </div>
                     ))
@@ -519,14 +685,6 @@ function Profile() {
                     <p>Папки не найдены.</p>
                   )}
                 </div>
-                {!clickCollection && (
-                <button
-                  className="showGroupName"
-                  onClick={() => setClickViewCollect(!clickViewCollect)}
-                >
-                  Показать имена групп
-                </button>
-                )}
               </div>
               {clickCollection && (
                 <div className="collection">
@@ -550,29 +708,37 @@ function Profile() {
                 </div>
               )}
               {!clickCollection && (
-                <div className="main-cards">
-                  {collectPosts.map((post) => (
-                    <div className="cards" key={post.id}>
-                      <div
-                        className="card"
-                        onClick={() => {
-                          navigate(`/post/${post.id}`);
-                        }}
-                      >
-                        {clickViewCollect && (
-                          <p className="nameGroup">
-                            {collect.map((col) =>
-                              post.id === col.PostId ? col.groupName : ""
-                            )}
-                          </p>
-                        )}
-                        <img src={post.imagePath} alt="Пост" />
-                        <div>{post.title}</div>
-                        <div>{post.username}</div>
+                <>
+                  <button
+                    className="showGroupName"
+                    onClick={() => setClickViewCollect(!clickViewCollect)}
+                  >
+                    Показать имена групп
+                  </button>
+                  <div className="main-cards">
+                    {collectPosts.map((post) => (
+                      <div className="cards" key={post.id}>
+                        <div
+                          className="card"
+                          onClick={() => {
+                            navigate(`/post/${post.id}`);
+                          }}
+                        >
+                          {clickViewCollect && (
+                            <p className="nameGroup">
+                              {collect.map((col) =>
+                                post.id === col.PostId ? col.groupName : ""
+                              )}
+                            </p>
+                          )}
+                          <img src={post.imagePath} alt="Пост" />
+                          <div>{post.title}</div>
+                          <div>{post.username}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           )}
