@@ -3,13 +3,15 @@ import { subscribeToUser, unsubscribeFromUser, checkSubscriptionStatus } from ".
 import Notifications from '../components/Notifications';
 
 
-const SubscriptionButton = ({ userId, onSubscribe, onUnsubscribe }) => {
+const SubscriptionButton = ({ userId, onSubscribe, onUnsubscribe, visible, username }) => {
   let checkRef = useRef(null)
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [variant, setVariant] = useState(false);
 
   // Проверяем статус подписки при загрузке компонента
   useEffect(() => {
+    setVariant(visible)
     const fetchSubscriptionStatus = async () => {
       try {
         const { isSubscribed } = await checkSubscriptionStatus(userId); // Предполагается, что API возвращает { isSubscribed: true/false }
@@ -51,19 +53,27 @@ const SubscriptionButton = ({ userId, onSubscribe, onUnsubscribe }) => {
   const clickedButton = () => {
     if(subscribed) {
       handleUnsubscribe();
-      checkRef.current.notifyError(`Вы отписались`)
+      checkRef.current.notifyError(`Вы отписались от ${username}`)
     } else {
       handleSubscribe();
-      checkRef.current.notifySuccess("Вы подписались")
+      checkRef.current.notifySuccess(`Вы подписались на ${username}`)
     }
   }
 
   return (
   <div>  
       <Notifications ref={checkRef} />
-      <button className={!subscribed ? "subscriptionButton" : "unSubscriptionButton"} onClick={() => {clickedButton()}}>
+      {variant ? (
+      <button className={!subscribed ? "subscribe" : "unScribe"} onClick={() => {clickedButton()}}>
         {subscribed ? "Отписаться" : "Подписаться"}
       </button>
+      ) : (
+        <button className={!subscribed ? "subscriptionButton" : "unSubscriptionButton"} onClick={() => {clickedButton()}}>
+        {subscribed ? "Отписаться" : "Подписаться"}
+      </button>
+      )
+    
+    }
   </div>
   );
 };

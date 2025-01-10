@@ -5,7 +5,7 @@ const Notifications = React.forwardRef((props, ref) => {
 
     const notifySuccess = (text) => {
         toast.success(text, {
-          position: 'top-right',
+          position: 'top-center',
           autoClose: 2000,
           hideProgressBar: false,
           closeOnClick: true,
@@ -16,12 +16,23 @@ const Notifications = React.forwardRef((props, ref) => {
       };
 
       const notifyError = (text) => {
-        toast.error(text)
+        toast.error(text, {
+          position: 'top-center',
+          autoClose: 2000,
+        })
+      }
+
+      const notifyInfo = (text) => {
+        toast.info(text, {
+          position: 'top-center',
+          autoClose: 2000,
+        })
       }
 
       useImperativeHandle(ref, () => ({
         notifySuccess,
         notifyError,
+        notifyInfo,
       }))
 
   return (

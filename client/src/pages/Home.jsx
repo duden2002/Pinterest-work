@@ -192,79 +192,83 @@ function Home() {
                     </span>
                   ))}
               </div>
-              {post.Liked ? (
-                <button
-                  onClick={() => {
-                    likeAPost(post.id);
-                  }}
-                >
-                  <svg
-                    width="32px"
-                    height="32px"
-                    viewBox="0 0 48 48"
-                    xmlns="http://www.w3.org/2000/svg"
-                    enableBackground="new 0 0 48 48"
+              <div className="postButtons">
+                <div>
+                  {post.Liked ? (
+                    <button
+                      onClick={() => {
+                        likeAPost(post.id);
+                      }}
+                    >
+                      <svg
+                        width="32px"
+                        height="32px"
+                        viewBox="0 0 48 48"
+                        xmlns="http://www.w3.org/2000/svg"
+                        enableBackground="new 0 0 48 48"
+                      >
+                        <path
+                          fill="#F44336"
+                          d="M34,9c-4.2,0-7.9,2.1-10,5.4C21.9,11.1,18.2,9,14,9C7.4,9,2,14.4,2,21c0,11.9,22,24,22,24s22-12,22-24C46,14.4,40.6,9,34,9z"
+                        />
+                      </svg>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        likeAPost(post.id);
+                      }}
+                    >
+                      <svg
+                        width="32px"
+                        height="32px"
+                        viewBox="0 0 48 48"
+                        xmlns="http://www.w3.org/2000/svg"
+                        enableBackground="new 0 0 48 48"
+                      >
+                        <path
+                          fill="#F5F5DC"
+                          d="M34,9c-4.2,0-7.9,2.1-10,5.4C21.9,11.1,18.2,9,14,9C7.4,9,2,14.4,2,21c0,11.9,22,24,22,24s22-12,22-24C46,14.4,40.6,9,34,9z"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                  <label>{post.Likes.length}</label>
+                </div>
+                {post.Collect ? (
+                  <button
+                    onClick={() => {
+                      collections(post.id);
+                    }}
                   >
-                    <path
-                      fill="#F44336"
-                      d="M34,9c-4.2,0-7.9,2.1-10,5.4C21.9,11.1,18.2,9,14,9C7.4,9,2,14.4,2,21c0,11.9,22,24,22,24s22-12,22-24C46,14.4,40.6,9,34,9z"
-                    />
-                  </svg>
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    likeAPost(post.id);
-                  }}
-                >
-                  <svg
-                    width="32px"
-                    height="32px"
-                    viewBox="0 0 48 48"
-                    xmlns="http://www.w3.org/2000/svg"
-                    enableBackground="new 0 0 48 48"
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      height="32px"
+                      viewBox="0 -960 960 960"
+                      width="32px"
+                      fill="#5084C1"
+                    >
+                      <path d="M200-120v-665q0-24 18-42t42-18h440q24 0 42 18t18 42v665L480-240 200-120Z" />
+                    </svg>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      collections(post.id);
+                    }}
                   >
-                    <path
-                      fill="#F5F5DC"
-                      d="M34,9c-4.2,0-7.9,2.1-10,5.4C21.9,11.1,18.2,9,14,9C7.4,9,2,14.4,2,21c0,11.9,22,24,22,24s22-12,22-24C46,14.4,40.6,9,34,9z"
-                    />
-                  </svg>
-                </button>
-              )}
-              <label>{post.Likes.length}</label>
-              {post.Collect ? (
-                <button
-                  onClick={() => {
-                    collections(post.id);
-                  }}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="32px"
-                    viewBox="0 -960 960 960"
-                    width="32px"
-                    fill="#5084C1"
-                  >
-                    <path d="M200-120v-665q0-24 18-42t42-18h440q24 0 42 18t18 42v665L480-240 200-120Z" />
-                  </svg>
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    collections(post.id);
-                  }}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="32px"
-                    viewBox="0 -960 960 960"
-                    width="32px"
-                    fill="#000000"
-                  >
-                    <path d="M200-120v-665q0-24 18-42t42-18h440q24 0 42 18t18 42v665L480-240 200-120Zm60-91 220-93 220 93v-574H260v574Zm0-574h440-440Z" />
-                  </svg>
-                </button>
-              )}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      height="32px"
+                      viewBox="0 -960 960 960"
+                      width="32px"
+                      fill="#000000"
+                    >
+                      <path d="M200-120v-665q0-24 18-42t42-18h440q24 0 42 18t18 42v665L480-240 200-120Zm60-91 220-93 220 93v-574H260v574Zm0-574h440-440Z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}
