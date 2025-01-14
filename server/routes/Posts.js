@@ -46,7 +46,11 @@ router.get("/", validateToken, async (req, res) => {
     const filteredGroupArr = [...new Set(groupArr)]
     console.log("Группа", filteredGroupArr)
 
-    
+    const user = await Users.findAll({
+      where: {username: listOfPosts.map((post) => (post.username))},
+      attributes: ['userPhoto', 'id']
+    })
+
 
     // Форматируем данные: преобразуем теги в массивы и добавляем путь к изображениям
     const formattedPosts = listOfPosts.map((post) => ({
@@ -64,17 +68,11 @@ router.get("/", validateToken, async (req, res) => {
         )
       : formattedPosts;
 
-      // const user = await Users.findAll({
-      //   where: {username: filteredPosts.username},
-      //   attributes: ['userPhoto']
-      // })
-  
-      // const userImage = user.map((users) => users.dataValues.userPhoto)
-  
-      // console.log(userImage)
+        
 
+      filteredPosts.reverse()
     // Отправляем данные клиенту
-    res.json({ listOfPosts: filteredPosts, likedPosts, collect, filteredGroupArr: filteredGroupArr });
+    res.json({ listOfPosts: filteredPosts, likedPosts, collect, filteredGroupArr: filteredGroupArr, usersImages: user });
   } catch (error) {
     console.error("Ошибка при получении списка постов", error);
     res.status(500).json({ error: "Ошибка получения постов" });
@@ -99,6 +97,9 @@ const filteredPosts = tagArray.length
           post.tags.some((tag) => tagArray.includes(tag))
         )
       : formattedPosts;
+
+        filteredPosts.reverse()
+
   res.json({ listOfPosts: filteredPosts, likedPosts: likedPosts });
 } catch (error) {
   console.error("Ошибка при получении списка постов", error)
@@ -187,6 +188,8 @@ router.get("/byuserId/:id", async (req, res) => {
     ...post.dataValues,
     imagePath: post.imagePath ? `http://localhost:3001/${(post.imagePath)}` : null  
   }))
+
+  formattedPosts.reverse()
 
   res.json({ listOfPosts: formattedPosts, formattedLikedPosts: formattedLikedPosts, formattedCollectPosts: formattedCollectPosts, defaultCollectPosts: defaultCollectPosts });
 } catch (error) {

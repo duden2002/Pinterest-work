@@ -43,6 +43,7 @@ const FollowersList = ({ userId, content }) => {
                 <img className="medium_avatar" src={follower.userPhoto} />
               ) : (
                 <svg
+                className="userSvg"
                 xmlns="http://www.w3.org/2000/svg"
                 height="50px"
                 viewBox="0 -960 960 960"
@@ -53,7 +54,7 @@ const FollowersList = ({ userId, content }) => {
               </svg>
               )
             }
-              {follower.username}
+              <span className="username">{follower.username}</span>
             </Link>
           </div>
         ))}

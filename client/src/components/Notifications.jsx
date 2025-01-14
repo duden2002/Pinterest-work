@@ -18,7 +18,7 @@ const Notifications = React.forwardRef((props, ref) => {
       const notifyError = (text) => {
         toast.error(text, {
           position: 'top-center',
-          autoClose: 2000,
+          autoClose: 3000,
         })
       }
 
