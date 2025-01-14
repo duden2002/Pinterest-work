@@ -15,8 +15,9 @@ function Registation({closeModal, openLogin}) {
   const onSubmit = (data) => {
     axios.post("http://localhost:3001/auth", data).then((response) => {
       if (response.data.error) {
-        authRef.current.notifyError("Ошибка")
-      } else {
+        regRef.current.notifyError("Ошибка")
+      }
+      else {
         console.log("User Created")
         closeModal()
         openLogin()
@@ -26,27 +27,35 @@ function Registation({closeModal, openLogin}) {
   }
 
   const validationShema = Yup.object().shape({
-    username: Yup.string().min(3).max(15).required(),
-    password: Yup.string().min(5).max(20).required()
+    username: Yup.string().min(5, 'Минимальная длина имени — 5 символов').max(15, "Максимальная длина имени — 15 символов").required("Введите имя пользователя"),
+    password: Yup.string().min(5, 'Минимальная длина пароля — 5 символов').max(20, "Максимальная длина пароля — 15 символов").required("Введите пароль")
   })
 
   return (
     <div>
       <Notifications ref={regRef} />
       <Formik initialValues={initialValues} onSubmit={onSubmit} validationSchema={validationShema}>
+      {({ errors, touched }) => (
         <Form className='form'>
           <img src={logo} alt="logo" />
           <h1>Добро пожаловать в <span>Pinterest</span></h1>
           <p>Находите новые идеи для вдохновения</p>
           <div className="form-input">
             <label>Имя пользователя: </label>
-            <Field className="input" name="username" placeholder="Имя Пользователя" />
+            <Field className="input" name="username" placeholder="Имя Пользователя" style={{border: errors.username && touched.username ? '2px solid red' : ''}} />
+            {errors.username && touched.username && (
+          <div className='regError'>{errors.username}</div>
+        )}
             <label>Пароль: </label>
-            <Field className="input" name="password" placeholder="Пароль" type="password" />
+            <Field className="input" name="password" placeholder="Пароль" type="password" style={{border: errors.password && touched.password ? '2px solid red' : ''}} />
+            {errors.password && touched.password && (
+          <div className='regError'>{errors.password}</div>
+        )}
             <button className='btn' type='submit'>Регистрация</button>
             <p className='linkTo'>Уже есть аккаунт? <span className="link" onClick={openLogin}>Войти</span></p>
           </div>
         </Form>
+      )}
       </Formik>
     </div>
   )

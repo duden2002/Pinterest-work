@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../helpers/AuthContext";
 import PostFilter from "../components/PostFilter";
+import Notifications from "../components/Notifications";
 
 function Home() {
   const navigate = useNavigate();
@@ -12,6 +13,9 @@ function Home() {
   const [searchTag, setSearchTag] = useState("");
   const { authState } = useContext(AuthContext);
   const postFilterRef = useRef(null);
+  const notiRef = useRef(null);
+  const [focusImage, setFocusImage] = useState(null)
+  const [focusBtn, setFocusBtn] = useState(null)
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -21,24 +25,36 @@ function Home() {
               withCredentials: true,
             })
           : await axios.get("http://localhost:3001/posts/default");
-
+  
         const likedPostIds =
           response.data.likedPosts?.map((like) => like.PostId) || [];
-        const collectPostIds = response.data.collect?.map((mark) => mark.PostId) || [];
-        const posts = response.data.listOfPosts.map((post) => ({
-          ...post,
-          Liked: likedPostIds.includes(post.id),
-          Collect: collectPostIds.includes(post.id),
-        }));
+        const collectPostIds =
+          response.data.collect?.map((mark) => mark.PostId) || [];
 
-        setListOfPosts(posts);
-        setFilteredPosts(posts); // Изначально показываем все посты
+        const postsWithPhotos = response.data.listOfPosts.map((post) => {
+          const userPhoto = Array.isArray(response.data.usersImages)
+            ? response.data.usersImages.find((user) => user.id === post.UserId)
+            : null;
+        
+          return {
+            ...post,
+            Liked: likedPostIds.includes(post.id),
+            Collect: collectPostIds.includes(post.id),
+            userPhoto: userPhoto && userPhoto.userPhoto && !userPhoto.userPhoto.includes("null")
+            ? `http://localhost:3001/${userPhoto.userPhoto}`
+            : null,
+          };
+        });
+  
+        setListOfPosts(postsWithPhotos);
+        setFilteredPosts(postsWithPhotos); // Изначально показываем все посты
+  
       } catch (error) {
-        alert("Ошибка при загрузке постов");
+        notiRef.current.notifyError("Ошибка при загрузке постов");
         console.error(error);
       }
     };
-
+  
     fetchPosts();
   }, [authState.status]);
 
@@ -106,10 +122,11 @@ function Home() {
           );
         })
         .catch((error) => {
+          notiRef.current.notifyError("Ошибка при лайке поста")
           console.error("Ошибка при лайке поста:", error);
         });
     } else {
-      alert("Чтобы ставить лайки нужно авторизоваться");
+      notiRef.current.notifyError("Авторизуйтесь чтобы поставить лайк посту");
     }
   };
 
@@ -148,16 +165,17 @@ function Home() {
           );
         })
         .catch((error) => {
-          console.error("Ошибка при лайке поста:", error);
+          notiRef.current.notifyError("Ошибка при сохранении поста")
+          console.error("Ошибка при сохранении поста:", error);
         });
     } else {
-      alert("Чтобы ставить лайки нужно авторизоваться");
+      notiRef.current.notifyError("Авторизуйтесь для сохранения поста")
     }
   };
 
-
   return (
     <div>
+      <Notifications ref={notiRef} />
       <PostFilter
         ref={postFilterRef}
         searchTag={searchTag}
@@ -170,16 +188,18 @@ function Home() {
         {filteredPosts.map((post) => (
           <div className="cards" key={post.id}>
             <div className="card">
-              <img
-                onClick={() => {
-                  navigate(`/post/${post.id}`);
-                }}
-                src={post.imagePath}
-                alt={post.title}
-              />
-              <div>{post.title}</div>
-              <div>{post.username}</div>
-              <div>
+                <img
+                className="postImg"
+                  onClick={() => {
+                    navigate(`/post/${post.id}`);
+                  }}
+                  onMouseEnter={() => {setFocusImage(post.id)}}
+                  onMouseLeave={() => {setFocusImage(null)}}
+                  style={{filter: focusBtn === post.id ? 'brightness(0.5)' : '' }}
+                  src={post.imagePath}
+                  alt={post.title}
+                />
+              <div className="tags customScrollbar">
                 {post.tags &&
                   Array.isArray(post.tags) &&
                   post.tags.map((tag, index) => (
@@ -192,8 +212,29 @@ function Home() {
                     </span>
                   ))}
               </div>
-              <div className="postButtons">
-                <div>
+              <div className="postTitle"><b>{post.title}</b></div>
+                <Link className="postUser" to={`/profile/${post.UserId}`}>
+                {post.userPhoto === null ? (
+                  <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  height="32px"
+                  viewBox="0 -960 960 960"
+                  width="32px"
+                  fill="#000000"
+                >
+                  <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm246-164q-59 0-99.5-40.5T340-580q0-59 40.5-99.5T480-720q59 0 99.5 40.5T620-580q0 59-40.5 99.5T480-440Zm0 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q53 0 100-15.5t86-44.5q-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160Zm0-360q26 0 43-17t17-43q0-26-17-43t-43-17q-26 0-43 17t-17 43q0 26 17 43t43 17Zm0-60Zm0 360Z" />
+                </svg>
+                ) : (
+                  <img src={post.userPhoto} />
+                )}
+                {post.username}
+              </Link>
+
+              {(focusImage === post.id || focusBtn === post.id) && (
+              <div className="postButtons" 
+              onMouseEnter={() => {setFocusBtn(post.id)}}
+              onMouseLeave={() => {setFocusBtn(null)}}>
+                <div className="likeBtn">
                   {post.Liked ? (
                     <button
                       onClick={() => {
@@ -201,8 +242,8 @@ function Home() {
                       }}
                     >
                       <svg
-                        width="32px"
-                        height="32px"
+                        width="60px"
+                        height="60px"
                         viewBox="0 0 48 48"
                         xmlns="http://www.w3.org/2000/svg"
                         enableBackground="new 0 0 48 48"
@@ -220,8 +261,8 @@ function Home() {
                       }}
                     >
                       <svg
-                        width="32px"
-                        height="32px"
+                        width="60px"
+                        height="60px"
                         viewBox="0 0 48 48"
                         xmlns="http://www.w3.org/2000/svg"
                         enableBackground="new 0 0 48 48"
@@ -233,42 +274,31 @@ function Home() {
                       </svg>
                     </button>
                   )}
-                  <label>{post.Likes.length}</label>
+                  {/* <label>{post.Likes.length}</label> */}
                 </div>
-                {post.Collect ? (
-                  <button
-                    onClick={() => {
-                      collections(post.id);
-                    }}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      height="32px"
-                      viewBox="0 -960 960 960"
-                      width="32px"
-                      fill="#5084C1"
+                <div className="collectBtn">
+                  {post.Collect ? (
+                    <button
+                    className="savedBtn"
+                      onClick={() => {
+                        collections(post.id);
+                      }}
                     >
-                      <path d="M200-120v-665q0-24 18-42t42-18h440q24 0 42 18t18 42v665L480-240 200-120Z" />
-                    </svg>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      collections(post.id);
-                    }}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      height="32px"
-                      viewBox="0 -960 960 960"
-                      width="32px"
-                      fill="#000000"
+                      Сохранено
+                    </button>
+                  ) : (
+                    <button
+                    className="saveBtn"
+                      onClick={() => {
+                        collections(post.id);
+                      }}
                     >
-                      <path d="M200-120v-665q0-24 18-42t42-18h440q24 0 42 18t18 42v665L480-240 200-120Zm60-91 220-93 220 93v-574H260v574Zm0-574h440-440Z" />
-                    </svg>
-                  </button>
-                )}
+                      Сохранить
+                    </button>
+                  )}
+                </div>
               </div>
+              )}
             </div>
           </div>
         ))}

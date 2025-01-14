@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useContext } from "react";
 import FollowersList from "../components/FollowersList";
 import FollowingList from "../components/FollowingList";
 import { useNavigate, useParams } from "react-router-dom";
@@ -6,8 +6,10 @@ import Cropper from "react-easy-crop";
 import axios from "axios";
 import Notifications from '../components/Notifications';
 import SubscriptionButton from '../components/SubscriptionButton';
+import { AuthContext } from '../helpers/AuthContext'
 
 function Profile() {
+  const { authState } = useContext(AuthContext);
   let navigate = useNavigate();
   let { id } = useParams();
   let postRef = useRef(null)
@@ -36,6 +38,7 @@ function Profile() {
   const [focus, setFocus] = useState(false);
   const [newNameFolder, setNewNameFolder] = useState("");
   const [updateContent, setUpdateContent] = useState(false)
+  const [hideInfo, setHideInfo] = useState(false)
 
   useEffect(() => {
     axios.get(`http://localhost:3001/auth/basicinfo/${id}`).then((response) => {
@@ -58,6 +61,7 @@ function Profile() {
       setCollectPosts(response.data.formattedCollectPosts);
       setDefaultCollectPosts(response.data.defaultCollectPosts);
     });
+    console.log(authState.id === Number(id))
   }, [id, changeContent, addPostId, showEditFolder, updateContent]);
 
   const onCropComplete = (croppedArea, croppedAreaPixels) => {
@@ -301,7 +305,6 @@ function Profile() {
     setFocus(false)
     
   }
-  
 
   return (
     <div className="profile">
@@ -509,6 +512,7 @@ function Profile() {
       {changeContent == "marks" && (
         <div className="users_likes">
           <h2>Коллекции</h2>
+          {authState.id === Number(id) && (
           <button
             className="addCollectionBtn"
             onClick={() => {
@@ -517,6 +521,7 @@ function Profile() {
           >
             {showAddGroup ? "Закрыть" : "Добавить коллекцию"}
           </button>
+          )} 
           {showAddGroup === true ? (
             <div className="inCollection">
               <h3>Добавление новой папки коллекций</h3>
@@ -569,6 +574,7 @@ function Profile() {
             </div>
           ) : (
             <div>
+              {authState.id === Number(id) && (
               <div>
                 <h2>Папки:</h2>
                 <div className="folder">
@@ -686,6 +692,7 @@ function Profile() {
                   )}
                 </div>
               </div>
+              )}
               {clickCollection && (
                 <div className="collection">
                   <h2>Выбранная папка: {selectFolder}</h2>
