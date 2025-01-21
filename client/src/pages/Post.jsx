@@ -3,11 +3,12 @@ import axios from "axios";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { AuthContext } from "../helpers/AuthContext";
 import SubscriptionButton from "../components/SubscriptionButton";
-
+import Notifications from "../components/Notifications";
 
 function Post() {
   const navigate = useNavigate();
   let { id } = useParams();
+  const notiRef = useRef(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newPostImage, setNewPostImage] = useState(null);
@@ -19,15 +20,20 @@ function Post() {
   const [checkComment, setCheckComment] = useState(false);
   const { authState } = useContext(AuthContext);
   const [username, setUsername] = useState({});
-  const [subUser, setSubUser] = useState({})
+  const [subUser, setSubUser] = useState({});
   const [checkSubscribe, setCheckSubscribe] = useState(false);
   const [userPhoto, setUserPhoto] = useState("");
   const [recommendations, setRecommendations] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState("");
+  const [updateContent, setUpdateContent] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     axios.get(`http://localhost:3001/posts/byId/${id}`).then((response) => {
       try {
         setPostObject(response.data);
+        setTags(response.data.tags.split(","));
         setUsername(response.data.UserId);
       } catch {
         (error) => console.log("Ошибка при получении поста", error);
@@ -36,7 +42,29 @@ function Post() {
 
     axios
       .get(`http://localhost:3001/comment/${id}`)
-      .then((response) => setComments(response.data))
+      .then((response) => {
+        const postsWithPhotos = response.data.comments.map((post) => {
+          const userPhoto = Array.isArray(response.data.user)
+            ? response.data.user.find((user) => user.username === post.username)
+            : null;
+
+          const userId = Array.isArray(response.data.user)
+            ? response.data.user.find((user) => user.username === post.username)
+            : null;
+
+          return {
+            ...post,
+            UserId: userId.username.includes(post.username) ? userId.id : null,
+            userPhoto:
+              userPhoto &&
+              userPhoto.userPhoto &&
+              !userPhoto.userPhoto.includes("null")
+                ? `http://localhost:3001/${userPhoto.userPhoto}`
+                : null,
+          };
+        });
+        setComments(postsWithPhotos);
+      })
       .catch((error) =>
         console.error("Ошибка при получении комментариев", error)
       );
@@ -48,7 +76,7 @@ function Post() {
         })
         .then((response) => {
           setCheckSubscribe(response.data.isSubscribed);
-          setSubUser(response.data.subscribed)
+          setSubUser(response.data.subscribed);
         })
         .catch((error) => {
           console.error("Ошибка проверки статуса подписки", error);
@@ -65,7 +93,7 @@ function Post() {
         console.error("Ошибка при получении рекомендаций:", error)
       );
     window.scrollTo(0, 0);
-  }, [id, checkComment]);
+  }, [id, checkComment, updateContent]);
 
   axios
     .get(`http://localhost:3001/auth/basicinfo/${username}`)
@@ -88,16 +116,21 @@ function Post() {
       });
   };
 
-  const deletePost = (id) => {
+  const deletePost = (id, title) => {
     axios
       .delete(`http://localhost:3001/posts/${id}`, { withCredentials: true })
       .then(() => {
         navigate("/");
+        notiRef.current.notifySuccess(`Пост ${title} успешно удален`);
       });
   };
 
-  const showModal = () => {
-    setShowEditModal(true);
+  const showModal = (text) => {
+    if (text === "edit") {
+      setShowEditModal(true);
+    } else {
+      setShowDeleteModal(true);
+    }
   };
 
   const formData = new FormData();
@@ -137,43 +170,72 @@ function Post() {
   };
 
   const editPost = () => {
-    if (newTitle.trim() === "" && !newPostImage) {
-      setError("Нужно указать заголовок или выбрать новое изображение");
-      return;
+    if (newTitle.trim() === "" && !newPostImage && tags.length === 0) {
+      notiRef.current.notifyError(
+        "Нужно указать заголовок или выбрать новое изображение"
+      );
+      return console.log(
+        "Нужно указать заголовок или выбрать новое изображение"
+      );
+    } else {
+      const formDataForPost = new FormData();
+      if (newTitle.trim() !== "") formDataForPost.append("title", newTitle);
+      if (newPostImage) formDataForPost.append("image", newPostImage);
+      formDataForPost.append("id", id);
+      if (tags.length !== 0) formDataForPost.append("tags", tags.join(","));
+
+      axios
+        .put("http://localhost:3001/posts/changePost", formDataForPost, {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        .then((response) => {
+          setPostObject((prev) => ({
+            ...prev,
+            title: newTitle || prev.title,
+            imagePath: newPostImage
+              ? URL.createObjectURL(newPostImage)
+              : prev.imagePath,
+          }));
+          setShowEditModal(false);
+          setNewTitle("");
+          setNewPostImage(null);
+          setError("");
+          setUpdateContent(!updateContent);
+        })
+        .catch((error) => {
+          console.error("Ошибка при обновлении поста:", error);
+          setError("Ошибка при обновлении поста");
+        });
     }
-
-    const formDataForPost = new FormData();
-    if (newTitle.trim() !== "") formDataForPost.append("title", newTitle);
-    if (newPostImage) formDataForPost.append("image", newPostImage);
-    formDataForPost.append("id", id);
-
-    axios
-      .put("http://localhost:3001/posts/changePost", formDataForPost, {
-        withCredentials: true,
-        headers: { "Content-Type": "multipart/form-data" },
-      })
-      .then((response) => {
-        setPostObject((prev) => ({
-          ...prev,
-          title: newTitle || prev.title,
-          imagePath: newPostImage
-            ? URL.createObjectURL(newPostImage)
-            : prev.imagePath,
-        }));
-        setShowEditModal(false);
-        setNewTitle("");
-        setNewPostImage(null);
-        setError("");
-      })
-      .catch((error) => {
-        console.error("Ошибка при обновлении поста:", error);
-        setError("Ошибка при обновлении поста");
-      });
   };
 
+  const addTag = () => {
+    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+      setTags([...tags, tagInput.trim().toLowerCase()]);
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (tagToRemove) => {
+    setTags(tags.filter((tag) => tag !== tagToRemove));
+  };
+
+  const actions = (number) => {
+    switch(number) {
+      case 2:
+      case 3:
+      case 4:
+        return "комментария"
+        break;
+      default:
+        return "комментарий"
+    }
+  };
 
   return (
     <div className="posts">
+      <Notifications ref={notiRef} />
       <div className="post">
         <div className="post-img">
           <img src={postObject.imagePath} alt="" />
@@ -193,55 +255,85 @@ function Post() {
                   </span>
                 ))}
             </div>
-            <span>
-              <Link
-                className="user_in_post"
-                to={`/profile/${postObject.UserId}`}
-              >
-                {userPhoto ? (
-                  <img className="little_avatar" src={userPhoto} />
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="24px"
-                    viewBox="0 -960 960 960"
-                    width="24px"
-                    fill="#000000"
-                  >
-                    <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm246-164q-59 0-99.5-40.5T340-580q0-59 40.5-99.5T480-720q59 0 99.5 40.5T620-580q0 59-40.5 99.5T480-440Zm0 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q53 0 100-15.5t86-44.5q-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160Zm0-360q26 0 43-17t17-43q0-26-17-43t-43-17q-26 0-43 17t-17 43q0 26 17 43t43 17Zm0-60Zm0 360Z" />
-                  </svg>
-                )}
-                {postObject.username}
-              </Link>
-            </span>
-            <SubscriptionButton
-              userId={username}
-              isSubscribed={checkSubscribe}
-              onSubscribe={() => setCheckSubscribe(true)}
-              onUnsubscribe={() => setCheckSubscribe(false)}
-              subUser={subUser}
-              username={postObject.username}
-              
-            />
+            <div className="usernameAvatarSub">
+              <span>
+                <Link
+                  className="user_in_post"
+                  to={`/profile/${postObject.UserId}`}
+                >
+                  {userPhoto ? (
+                    <img className="medium_avatar" src={userPhoto} />
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      height="24px"
+                      viewBox="0 -960 960 960"
+                      width="24px"
+                      fill="#000000"
+                    >
+                      <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm246-164q-59 0-99.5-40.5T340-580q0-59 40.5-99.5T480-720q59 0 99.5 40.5T620-580q0 59-40.5 99.5T480-440Zm0 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q53 0 100-15.5t86-44.5q-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160Zm0-360q26 0 43-17t17-43q0-26-17-43t-43-17q-26 0-43 17t-17 43q0 26 17 43t43 17Zm0-60Zm0 360Z" />
+                    </svg>
+                  )}
+                  <h3>{postObject.username}</h3>
+                </Link>
+              </span>
+              <div className="subButtonInPost">
+                <SubscriptionButton
+                  userId={username}
+                  isSubscribed={checkSubscribe}
+                  onSubscribe={() => setCheckSubscribe(true)}
+                  onUnsubscribe={() => setCheckSubscribe(false)}
+                  subUser={subUser}
+                  username={postObject.username}
+                />
+              </div>
+            </div>
             <div className="change-block">
               {authState.username === postObject.username && (
                 <button
                   className="delete-btn"
                   onClick={() => {
-                    deletePost(id);
+                    showModal("delete");
                   }}
                 >
-                  Delete Post
+                  Удалить пост
                 </button>
+              )}
+              {showDeleteModal && (
+                <div
+                  className="modal"
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  <div
+                    className="modal-content"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h2>Вы уверены что хотите удалить пост ?</h2>
+                    <div className="deletePostButtons">
+                      <button
+                        className="deletePostBtn"
+                        onClick={() => deletePost(id, postObject.title)}
+                      >
+                        Удалить
+                      </button>
+                      <button
+                        className="deletePostBtn"
+                        onClick={() => setShowDeleteModal(false)}
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
               {authState.username === postObject.username && (
                 <button
                   className="edit-btn"
                   onClick={() => {
-                    showModal();
+                    showModal("edit");
                   }}
                 >
-                  Change Post
+                  Изменить пост
                 </button>
               )}
               {showEditModal && (
@@ -250,13 +342,10 @@ function Post() {
                     className="modal-content"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <button
-                      className="close-button"
-                      onClick={() => setShowEditModal(false)}
+                    <form
+                      className="editPostForm"
+                      onSubmit={(e) => e.preventDefault()}
                     >
-                      &times;
-                    </button>
-                    <form onSubmit={(e) => e.preventDefault()}>
                       <input
                         type="text"
                         value={newTitle}
@@ -270,17 +359,156 @@ function Post() {
                           }
                         }}
                       />
+                      <label className="newImagePost">
+                        <input
+                          type="file"
+                          onChange={(e) => setNewPostImage(e.target.files[0])}
+                        />
+                        <span>Выберите новое изображение</span>
+
+                        {newPostImage !== null && (
+                          <div className="nameOfNewImage">
+                            <p>{newPostImage.name}</p>
+                            <div className="notification">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                height="32px"
+                                viewBox="0 -960 960 960"
+                                width="32px"
+                                fill="none"
+                                stroke="#000000" /* Устанавливаем цвет обводки */
+                                strokeWidth="50"
+                              >
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <circle
+                                  class="firework"
+                                  cx="482"
+                                  cy="-464"
+                                  r="5"
+                                />
+                                <path
+                                  d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"
+                                  className="notifyMark"
+                                />
+                              </svg>
+                              Файл выбран
+                            </div>
+                          </div>
+                        )}
+                      </label>
                       <input
-                        type="file"
-                        onChange={(e) => setNewPostImage(e.target.files[0])}
+                        type="text"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        placeholder="Add tags"
                       />
                       <button
-                        disabled={!newTitle.trim() && !newPostImage}
                         type="button"
-                        onClick={editPost}
+                        onClick={addTag}
+                        disabled={!tagInput.trim()}
+                        className="addTags"
                       >
+                        Добавить тэг
+                      </button>
+                      <div className="tags">
+                        {tags &&
+                          tags.map((tag, index) => (
+                            <span
+                              key={index}
+                              className="tag"
+                              onClick={() => removeTag(tag)}
+                            >
+                              {tag.trim()}
+                            </span>
+                          ))}
+                      </div>
+                      <button type="button" onClick={editPost}>
                         Отправить
                       </button>
+
                       {error && <div style={{ color: "red" }}>{error}</div>}
                     </form>
                   </div>
@@ -293,7 +521,7 @@ function Post() {
               <input
                 className="text-comment"
                 type="text"
-                placeholder="Comment..."
+                placeholder="Комментарий"
                 autoComplete="off"
                 value={newComment}
                 onChange={(event) => {
@@ -333,11 +561,45 @@ function Post() {
               {/* Сообщение об ошибке */}
             </div>
             <div className="listOfComments">
+              <div className="commentLength">
+                {comments.length !== 0 ? (
+                  <h2>{comments.length} {actions(comments.length)}</h2>
+                ) : (
+                  <h2>Комментарии</h2>
+                )}
+              </div>
               {comments.map((comment, key) => {
                 return (
-                  <div key={key} className="comment">
+                  <div
+                    key={key}
+                    className={
+                      authState.username === comment.username
+                        ? "comment"
+                        : "commentWithoutShadow"
+                    }
+                  >
                     <div className="username-commentBody">
-                      <label>{comment.username}</label>
+                      <Link
+                        className="postUser"
+                        to={
+                          authState.status ? `/profile/${comment.UserId}` : null
+                        }
+                      >
+                        {comment.userPhoto === null ? (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            height="32px"
+                            viewBox="0 -960 960 960"
+                            width="32px"
+                            fill="#000000"
+                          >
+                            <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm246-164q-59 0-99.5-40.5T340-580q0-59 40.5-99.5T480-720q59 0 99.5 40.5T620-580q0 59-40.5 99.5T480-440Zm0 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q53 0 100-15.5t86-44.5q-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160Zm0-360q26 0 43-17t17-43q0-26-17-43t-43-17q-26 0-43 17t-17 43q0 26 17 43t43 17Zm0-60Zm0 360Z" />
+                          </svg>
+                        ) : (
+                          <img src={comment.userPhoto} alt="User" />
+                        )}
+                        <b>{comment.username}</b>
+                      </Link>
                       {comment.commentBody}
                     </div>
                     <div className="comment-img">
@@ -365,7 +627,6 @@ function Post() {
       </div>
       <div className="recommendations">
         <h2>Похожие посты</h2>
-        {console.log(recommendations)}
         {recommendations.length > 0 ? (
           <div className="recommendation-list">
             {recommendations.map((rec) => (

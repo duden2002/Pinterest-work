@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 import Registration from "./pages/Registation";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
+import Landing from "./pages/Landing";
 import axios from "axios";
 import { useState, useEffect } from "react";
 import { AuthContext } from "./helpers/AuthContext";
@@ -23,6 +24,7 @@ function App() {
   });
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegistModal, setShowRegistModal] = useState(false);
+  const [viewPostsButton, setViewPostsButton] = useState(false);
 
   useEffect(() => {
     axios
@@ -56,9 +58,14 @@ function App() {
           <header>
             <div className="links">
               <Link to={"/"}>
-                <div className="logo">
+                <div className="logo" onClick={() => setViewPostsButton(false)}>
                   <img src={logo} alt="logo" />
                   Pinterest
+                </div>
+              </Link>
+              <Link to={"/posts"}>
+                <div>
+                  <button className="lookAtPosts" onClick={() => setViewPostsButton(!viewPostsButton)} style={{backgroundColor: viewPostsButton ? 'black' : "transparent"}} disabled={viewPostsButton}><strong style={{color: viewPostsButton ? "white" : "black"}}>Просмотреть</strong></button>
                 </div>
               </Link>
               {!authState.status ? (
@@ -68,7 +75,7 @@ function App() {
                       className="login"
                       onClick={() => setShowLoginModal(true)}
                     >
-                      Войти
+                      <strong>Войти</strong>
                     </button>
                   </div>
                   <div className="link-box">
@@ -76,7 +83,7 @@ function App() {
                       className="registration"
                       onClick={() => setShowRegistModal(true)}
                     >
-                      Регистрация
+                      <strong>Регистрация</strong>
                     </button>
                   </div>
                 </>
@@ -88,7 +95,8 @@ function App() {
             </div>
           </header>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/posts" element={<Home />} />
             <Route path="/other" element={<Other />} />
             <Route path="/createPost" element={<CreatePost />} />
             <Route path="/post/:id" element={<Post />} />

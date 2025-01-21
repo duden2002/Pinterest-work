@@ -100,7 +100,12 @@ const filteredPosts = tagArray.length
 
         filteredPosts.reverse()
 
-  res.json({ listOfPosts: filteredPosts, likedPosts: likedPosts });
+        const user = await Users.findAll({
+          where: {username: listOfPosts.map((post) => (post.username))},
+          attributes: ['userPhoto', 'id']
+        })
+
+  res.json({ listOfPosts: filteredPosts, likedPosts: likedPosts, usersImages: user });
 } catch (error) {
   console.error("Ошибка при получении списка постов", error)
   res.status(404).json({error: "Ошибка получения постов"})
@@ -154,9 +159,13 @@ router.get("/recommendations/:postId", async (req, res) => {
   }
 });
 
-router.get("/byuserId/:id", async (req, res) => {
+
+router.get("/byuserId/:id", validateToken, async (req, res) => {
   const id = req.params.id
-  const listOfPosts = await Posts.findAll({where: {UserId: id}});
+  const listOfPosts = await Posts.findAll({where: {UserId: id}}, {include: [
+    { model: Likes, where: { UserId: req.user.id }, required: false },
+    { model: Collections, where: { UserId: req.user.id }, required: false },
+  ],});
   let likedPosts = await Likes.findAll({where: {UserId: id}});
   let collectPosts = await Collections.findAll({where: {UserId: id}});
   let defaultCollectPosts = await Collections.findAll({where: {UserId: id}});
@@ -168,6 +177,10 @@ router.get("/byuserId/:id", async (req, res) => {
 
   let formattedLikedPosts = likedPosts.map(post => post.PostId)
   let formattedCollectPosts = collectPosts.map(post => post.PostId)
+
+
+  const userLikedPosts = await Likes.findAll({ where: { UserId: req.user.id }});
+  const userCollect = await Collections.findAll({ where: { UserId: req.user.id }});
 
   if(formattedLikedPosts) {
     likedPosts = await Posts.findAll({where: {id: formattedLikedPosts}})
@@ -191,7 +204,13 @@ router.get("/byuserId/:id", async (req, res) => {
 
   formattedPosts.reverse()
 
-  res.json({ listOfPosts: formattedPosts, formattedLikedPosts: formattedLikedPosts, formattedCollectPosts: formattedCollectPosts, defaultCollectPosts: defaultCollectPosts });
+  const userPhotosInCollections = await Users.findAll({attributes: ["id", "userPhoto"]});
+
+
+  console.log(userPhotosInCollections)
+
+
+  res.json({ userPhotosInCollections: userPhotosInCollections, listOfPosts: formattedPosts, userLikedPosts: userLikedPosts, userCollect: userCollect, formattedLikedPosts: formattedLikedPosts, formattedCollectPosts: formattedCollectPosts, defaultCollectPosts: defaultCollectPosts });
 } catch (error) {
   console.error("Ошибка при получении списка постов", error)
   res.status(404).json({error: "Ошибка получения постов"})
@@ -232,7 +251,7 @@ router.post("/", validateToken, upload.single("image"), async (req, res) => {
 });
 
 router.put("/changePost", validateToken, upload.single("image"), async (req, res) => {
-  const { title, id } = req.body;
+  const { title, id, tags } = req.body;
   const newImagePath = req.file ? req.file.path : null;
 
   try {
@@ -257,6 +276,7 @@ router.put("/changePost", validateToken, upload.single("image"), async (req, res
     const updatedData = {};
     if (title) updatedData.title = title;
     if (newImagePath) updatedData.imagePath = newImagePath;
+    if (tags) updatedData.tags = tags;
 
     await post.update(updatedData);
     res.json({ message: "Пост успешно обновлен", post });
