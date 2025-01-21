@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useContext } from "react";
+import { AuthContext } from "../helpers/AuthContext";
 import Photo1 from "../assets/imagesForLanding/1.jpg";
 import Photo2 from "../assets/imagesForLanding/2.jpg";
 import Photo3 from "../assets/imagesForLanding/3.jpg";
@@ -40,97 +42,124 @@ import Photo2_10 from "../assets/imagesForLanding/2-10.jpg";
 import Photo2_11 from "../assets/imagesForLanding/2-11.jpg";
 import Photo2_12 from "../assets/imagesForLanding/2-12.jpg";
 import Photo2_13 from "../assets/imagesForLanding/2-13.jpg";
+import shopImage from "../assets/imagesForLanding/shop-de8ddf10.png";
+import shopCreator from "../assets/imagesForLanding/creator-pin-img-3bed5463.png";
+import finalBack from "../assets/imagesForLanding/finalBack.png";
 
 function Landing() {
-    const [frame, setFrame] = useState("newYear");
-    const [exitFrame, setExitFrame] = useState("");
-    const navigate = useNavigate();
+  const { setShowRegistModal } = useContext(AuthContext);
+  const [frame, setFrame] = useState("newYear");
+  const [exitFrame, setExitFrame] = useState("");
+  const navigate = useNavigate();
+
+  const frames = ["newYear", "home", "style"]; // Список фреймов
+  let frameIndex = frames.indexOf(frame); // Индекс текущего фрейма
+
+  // Автоматическое переключение фреймов
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const nextIndex = (frameIndex + 1) % frames.length; // Цикличное переключение
+      setExitFrame(frame);
+      setFrame(frames[nextIndex]);
+      frameIndex = nextIndex;
+    }, 7000); // Интервал времени в миллисекундах (5 секунд)
+
+    return () => clearInterval(interval); // Очистка интервала при размонтировании
+  }, [frame, frames]);
+
+  const clickToSection = (id) => {
+    const section = document.getElementById(id);
+    section.scrollIntoView({ behavior: "smooth" });
+  };
 
   const clickLandingBtn = (text) => {
     setExitFrame(frame);
-
     setFrame(text);
   };
 
   const checkClass = (text) => {
     if (text === frame) {
-        return "viewCollections enter";
-    } 
+      return "viewCollections enter";
+    }
     if (text === exitFrame) {
-        return "viewCollections exit";
+      return "viewCollections exit";
     } else {
-        return "noneClass"
+      return "noneClass";
     }
   };
 
+  const checkClassForHeader = (text) => {
+    if (text === frame) {
+      return "frameInfo enter";
+    } else if (text === exitFrame) {
+      return "frameInfo exit";
+    } else {
+      return "noneClass";
+    }
+  };
 
-  console.log(exitFrame)
+  const changeColor = (text) => {
+    if (text === "newYear") {
+      return "green";
+    } else if (text === "home") {
+      return "lightgreen";
+    } else if (text === "style") {
+      return "blue";
+    }
+  };
+
+  const sections = document.querySelectorAll(".section");
+  let currentSectionIndex = 0; // Текущая секция
+  let isScrolling = false; // Флаг для предотвращения лишних скроллов
+
+  // Функция для перехода к секции
+  function scrollToSection(index) {
+    if (index < 0 || index >= sections.length) return; // Проверяем границы
+    const targetSection = sections[index];
+    targetSection.scrollIntoView({
+      behavior: "smooth", // Плавная прокрутка
+      block: "start",
+    });
+    currentSectionIndex = index;
+    isScrolling = true;
+    setTimeout(() => (isScrolling = false), 1000); // Устанавливаем задержку для предотвращения частой прокрутки
+  }
+
+  // Событие прокрутки колеса
+  window.addEventListener("wheel", (event) => {
+    if (isScrolling) return; // Если уже прокручиваем, игнорируем
+
+    if (event.deltaY > 0) {
+      // Прокрутка вниз
+      scrollToSection(currentSectionIndex + 1);
+    } else {
+      // Прокрутка вверх
+      scrollToSection(currentSectionIndex - 1);
+    }
+  });
+
   return (
     <div className="landing">
-      <section className="firstSection">
+      <section className="firstSection" id="section1">
         <div className="section">
           <h1>Найдите свежие идеи:</h1>
-          {frame === "newYear" && (
-            <h2
-              className="frameInfo"
-              style={{ animation: "visible 2s ease-in-out forwards" }}
-            >
-              идея Нового Года
-            </h2>
-          )}
-          {exitFrame === "newYear" && (
-            <h2
-              className="frameInfo"
-              style={{ animation: "visibleExit 2s ease-in-out forwards" }}
-            >
-              идея Нового Года
-            </h2>
-          )}
-
-          {frame === "home" && (
-            <h2
-              className="frameInfo homeFrame"
-              style={{
-                animation: "visible 2s ease-in-out forwards",
-                color: "#63a685",
-              }}
-            >
-              идея домашнего декора
-            </h2>
-          )}
-          {exitFrame === "home" && (
-            <h2
-              className="frameInfo homeFrame"
-              style={{
-                animation: "visibleExit 2s ease-in-out forwards",
-                color: "#63a685",
-              }}
-            >
-              идея домашнего декора
-            </h2>
-          )}
-          {frame === "style" && (
-            <h2
-              className="frameInfo styleFrame"
-              style={{
-                animation: "visible 2s ease-in-out forwards",
-                color: "#3d7ad6",
-              }}
-            >
-              идея стильного образа
-            </h2>
-          )}
-          {exitFrame === "style" && (
-            <h2
-              className="frameInfo styleFrame"
-              style={{
-                animation: "visibleExit 2s ease-in-out forwards",
-                color: "#3d7ad6",
-              }}
-            >
-              идея стильного образа
-            </h2>
-          )}
+          <h2 className={checkClassForHeader("newYear")}>идея Нового Года</h2>
+          <h2
+            className={checkClassForHeader("home")}
+            style={{
+              color: "#63a685",
+            }}
+          >
+            идея домашнего декора
+          </h2>
+          <h2
+            className={checkClassForHeader("style")}
+            style={{
+              color: "#3d7ad6",
+            }}
+          >
+            идея стильного образа
+          </h2>
 
           <div className="landingNavButtons">
             <div
@@ -155,10 +184,7 @@ function Landing() {
               }}
             ></div>
           </div>
-          <div
-            className={checkClass("newYear")}
-            
-          >
+          <div className={checkClass("newYear")}>
             <div className="first-Collection styleCollections">
               <img src={Photo10} alt="" />
               <img src={Photo11} alt="" />
@@ -187,10 +213,7 @@ function Landing() {
               <img src={Photo13} alt="" />
             </div>
           </div>
-          <div
-            className={checkClass("home")}
-           
-          >
+          <div className={checkClass("home")}>
             <div className="first-Collection styleCollections">
               <img src={Photo1_1} alt="" />
               <img src={Photo1_2} alt="" />
@@ -219,9 +242,7 @@ function Landing() {
               <img src={Photo1_13} alt="" />
             </div>
           </div>
-          <div
-            className={checkClass("style")}
-          >
+          <div className={checkClass("style")}>
             <div className="first-Collection styleCollections">
               <img src={Photo2_1} alt="" />
               <img src={Photo2_2} alt="" />
@@ -250,11 +271,29 @@ function Landing() {
               <img src={Photo2_13} alt="" />
             </div>
           </div>
+          <div
+            className="firstSectionBtn"
+            onClick={() => clickToSection("section2")}
+            style={{ backgroundColor: changeColor(frame) }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="24px"
+              viewBox="0 -960 960 960"
+              width="24px"
+              fill="#ffffff"
+            >
+              <path d="M440-800v487L216-537l-56 57 320 320 320-320-56-57-224 224v-487h-80Z" />
+            </svg>
+          </div>
         </div>
       </section>
-      <section className="secondSection">
+      <section className="secondSection" id="section2">
         <div className="section">
-          <div className="imagesArea" onClick={() => navigate(`/posts/?tags=${'стиль'}`)}>
+          <div
+            className="imagesArea"
+            onClick={() => navigate(`/posts/?tags=${"стиль"}`)}
+          >
             <img className="backImage" src={Photo2_12} alt="" />
             <img className="backImage" src={Photo2_11} alt="" />
             <img className="backImage" src={Photo2_9} alt="" />
@@ -271,6 +310,65 @@ function Landing() {
               </svg>
               <h1>Стильные образы для мужчин</h1>
             </div>
+          </div>
+          <div className="secondSectionDescription">
+            <div className="des">
+              <h1>Найдите идею</h1>
+              <p>
+                Что еще вы хотите опробовать? Придумайте запрос на интересующую
+                тему, например «Стили для мужчин», и просмотрите результаты.
+              </p>
+              <button
+                className="desbutton"
+                onClick={() => navigate(`/posts/?tags=${"стиль"}`)}
+              >
+                Просмотреть
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="thirdSection" id="section3">
+        <div className="section">
+          <div className="imageContainer">
+            <img src={shopImage} alt="" />
+            <img src={shopCreator} alt="" />
+          </div>
+          <div className="thirdSectionDescription">
+            <h2>Просмотрите, сделайте, опробуйте и примерьте</h2>
+            <p>
+              В Pinterest вы можете находить для себя новые увлечения и идеи со
+              всего мира.
+            </p>
+            <button className="desbutton">Просмотреть</button>
+          </div>
+        </div>
+      </section>
+      <section className="fourthSection" id="section4">
+        <div className="section">
+          <img src={finalBack} alt="" />
+          <div className="finaldescription">
+            <h2 className="header">
+              Зарегистрируйтесь, чтобы находить больше идей
+            </h2>
+            <button onClick={() => setShowRegistModal(true)}>
+              Регистрация
+            </button>
+          </div>
+          <div
+            className="firstSectionBtn last"
+            onClick={() => clickToSection("section1")}
+            style={{ backgroundColor: changeColor(frame) }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="24px"
+              viewBox="0 -960 960 960"
+              width="24px"
+              fill="#FFFFFF"
+            >
+              <path d="M440-160v-487L216-423l-56-57 320-320 320 320-56 57-224-224v487h-80Z" />
+            </svg>
           </div>
         </div>
       </section>

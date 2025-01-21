@@ -53,7 +53,7 @@ function App() {
   return (
     <div>
       <ToastContainer />
-      <AuthContext.Provider value={{ authState, setAuthState }}>
+      <AuthContext.Provider value={{ authState, setAuthState, setShowRegistModal, showRegistModal }}>
         <Router>
           <header>
             <div className="links">
