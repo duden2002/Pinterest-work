@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { Comments } = require("../models");
+const { Comments, Users } = require("../models");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs")
@@ -25,7 +25,13 @@ router.get("/:postId", async (req, res) => {
       comment.imagePath = `http://localhost:3001/${comment.imagePath}`;
     }
   });
-  res.json(comments);
+  const user = await Users.findAll({
+    where: {username: comments.map((post) => (post.username))},
+    attributes: ['userPhoto', 'username', 'id']
+  })
+  comments.reverse()
+
+  res.json({comments: comments, user: user});
 });
 
 router.post("/", validateToken, upload.single("image"), async (req, res) => {
@@ -33,7 +39,8 @@ router.post("/", validateToken, upload.single("image"), async (req, res) => {
   const username = req.user.username;
   const imagePath = req.file ? req.file.path : null;
   comment.username = username;
-  comment.imagePath = imagePath              //Обращаемя к таблице Comments в которой уже указали новый столбец с названием username
+  comment.imagePath = imagePath  
+  
   await Comments.create(comment);
   res.json(comment);
 });

@@ -4,15 +4,18 @@ import FollowingList from "../components/FollowingList";
 import { useNavigate, useParams } from "react-router-dom";
 import Cropper from "react-easy-crop";
 import axios from "axios";
-import Notifications from '../components/Notifications';
-import SubscriptionButton from '../components/SubscriptionButton';
-import { AuthContext } from '../helpers/AuthContext'
+import Notifications from "../components/Notifications";
+import SubscriptionButton from "../components/SubscriptionButton";
+import { AuthContext } from "../helpers/AuthContext";
+import UsersButtons from "../components/UsersButtons";
+import ProfileLikes from "./Profile/ProfileLikes";
+import ProfileCollections from "./Profile/ProfileCollections";
 
 function Profile() {
   const { authState } = useContext(AuthContext);
   let navigate = useNavigate();
   let { id } = useParams();
-  let postRef = useRef(null)
+  let postRef = useRef(null);
   const [listOfPosts, setListOfPosts] = useState([]);
   const [userPhoto, setuserPhoto] = useState("");
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -23,7 +26,6 @@ function Profile() {
   const [likedPosts, setLikedPosts] = useState([]);
   const [collectPosts, setCollectPosts] = useState([]);
   const [changeContent, setChangeContent] = useState("posts");
-  const [groupName, setGroupName] = useState(""); // для имени новой группы
   const [showAddGroup, setShowAddGroup] = useState(false);
   const [addPostId, setAddPostId] = useState([]);
   const [groupPosts, setGroupPosts] = useState([]);
@@ -37,31 +39,119 @@ function Profile() {
   const [showEditFolder, setShowEditFolder] = useState(false);
   const [focus, setFocus] = useState(false);
   const [newNameFolder, setNewNameFolder] = useState("");
-  const [updateContent, setUpdateContent] = useState(false)
-  const [hideInfo, setHideInfo] = useState(false)
+  const [updateContent, setUpdateContent] = useState(false);
+  const [focusImage, setFocusImage] = useState(null);
+  const [focusBtn, setFocusBtn] = useState(null);
+  const [addCollectPosts, setAddCollectPosts] = useState([]);
 
   useEffect(() => {
-    axios.get(`http://localhost:3001/auth/basicinfo/${id}`).then((response) => {
+    const fetchPosts = async () => {
+    await axios.get(`http://localhost:3001/auth/basicinfo/${id}`).then((response) => {
       setuserPhoto(response.data.userPhoto);
       setUserInfo(response.data.username);
     });
 
-    axios
+    await axios
       .get("http://localhost:3001/posts", { withCredentials: true })
       .then((response) => {
+        const postsWithPhotos = response.data.listOfPosts.map((post) => {
+          const userPhoto = Array.isArray(response.data.usersImages)
+            ? response.data.usersImages.find((user) => user.id === post.UserId)
+            : null;
+          return {
+            ...post,
+            userPhoto:
+              userPhoto &&
+              userPhoto.userPhoto &&
+              !userPhoto.userPhoto.includes("null")
+                ? `http://localhost:3001/${userPhoto.userPhoto}`
+                : null,
+          };
+        });
+
         setGroupPosts(response.data.filteredGroupArr);
-        setCheckGroup(response.data.listOfPosts);
+        setCheckGroup(postsWithPhotos);
         setCollect(response.data.collect);
       });
 
-    axios.get(`http://localhost:3001/posts/byuserid/${id}`).then((response) => {
-      setListOfPosts(response.data.listOfPosts);
+    await axios
+      .get(`http://localhost:3001/posts/byuserid/${id}`, {
+        withCredentials: true,
+      })
+      .then((response) => {
+        const likedPostIds =
+          response.data.userLikedPosts?.map((like) => like.PostId) || [];
+        const collectPostIds =
+          response.data.userCollect?.map((mark) => mark.PostId) || [];
 
-      setLikedPosts(response.data.formattedLikedPosts);
-      setCollectPosts(response.data.formattedCollectPosts);
-      setDefaultCollectPosts(response.data.defaultCollectPosts);
-    });
-    console.log(authState.id === Number(id))
+        const postsWithPhotos = response.data.listOfPosts.map((post) => {
+          const userPhoto = Array.isArray(response.data.userPhotosInCollections)
+            ? response.data.userPhotosInCollections.find(
+                (user) => user.id === post.UserId
+              )
+            : null;
+          return {
+            ...post,
+            Liked: likedPostIds.includes(post.id),
+            Collect: collectPostIds.includes(post.id),
+            userPhoto:
+              userPhoto &&
+              userPhoto.userPhoto &&
+              !userPhoto.userPhoto.includes("null")
+                ? `http://localhost:3001/${userPhoto.userPhoto}`
+                : null,
+          };
+        });
+        const postsWithLikes = response.data.formattedLikedPosts.map((post) => {
+          const userPhoto = Array.isArray(response.data.userPhotosInCollections)
+            ? response.data.userPhotosInCollections.find(
+                (user) => user.id === post.UserId
+              )
+            : null;
+          return {
+            ...post,
+            Liked: likedPostIds.includes(post.id),
+            Collect: collectPostIds.includes(post.id),
+            userPhoto:
+              userPhoto &&
+              userPhoto.userPhoto &&
+              !userPhoto.userPhoto.includes("null")
+                ? `http://localhost:3001/${userPhoto.userPhoto}`
+                : null,
+          };
+        });
+        const postsWithCollect = response.data.formattedCollectPosts.map(
+          (post) => {
+            const userPhoto = Array.isArray(
+              response.data.userPhotosInCollections
+            )
+              ? response.data.userPhotosInCollections.find(
+                  (user) => user.id === post.UserId
+                )
+              : null;
+
+            return {
+              ...post,
+              Liked: likedPostIds.includes(post.id),
+              Collect: collectPostIds.includes(post.id),
+              userPhoto:
+                userPhoto &&
+                userPhoto.userPhoto &&
+                !userPhoto.userPhoto.includes("null")
+                  ? `http://localhost:3001/${userPhoto.userPhoto}`
+                  : null,
+            };
+          }
+        );
+
+        setListOfPosts(postsWithPhotos);
+        setAddCollectPosts(postsWithPhotos);
+        setLikedPosts(postsWithLikes);
+        setCollectPosts(postsWithCollect);
+        setDefaultCollectPosts(response.data.defaultCollectPosts);
+      });
+    }
+    fetchPosts()
   }, [id, changeContent, addPostId, showEditFolder, updateContent]);
 
   const onCropComplete = (croppedArea, croppedAreaPixels) => {
@@ -142,169 +232,11 @@ function Profile() {
     setCheckUserPick(true);
   };
 
-  const addGroupToCollection = async (collectionId) => {
-    try {
-      await axios.put(
-        "http://localhost:3001/collection/addcollection",
-        {
-          PostId: addPostId, // Тело запроса
-          groupName: groupName,
-        },
-        {
-          withCredentials: true, // Включаем отправку cookie
-          headers: {
-            "Content-Type": "application/json", // Указываем тип контента
-          },
-        }
-      );
-      // Обновляем коллекции в UI
-      if (clickCollection === false) {
-        setCollectPosts(
-          collectPosts.map((collection) =>
-            collection.id === collectionId
-              ? { ...collection, groupName }
-              : collection
-          )
-        );
-        setUpdateContent(!updateContent)
-      } else {
-      }
-      setGroupName("");
-      setShowAddGroup(false);
-    } catch (error) {
-      console.error("Ошибка при добавлении группы в коллекцию:", error);
-    }
-  };
 
   const updateChangeContent = (newData) => {
     setChangeContent(newData);
-  }
-
-  const showGroup = () => {
-    setShowAddGroup((prev) => !prev);
-    if (showAddGroup === false) {
-      setAddPostId("");
-    }
   };
 
-  const addPost = (postId) => {
-    setAddPostId((prev) => {
-      // Если showEditFolder активен, добавляем все посты из filterPosts
-        // Если showEditFolder выключен или уже были данные
-        return prev.includes(postId)
-          ? prev.filter((id) => id !== postId) // Удаляем пост
-          : [...prev, postId]; // Добавляем пост
-      
-    });
-
-    // Лог для проверки
-    console.log("Посты: ", addPostId);
-  };
-
-  const filteredPosts = (group) => {
-    if (groupPosts.length === 0) {
-      setFilterPosts(checkGroup);
-      return;
-    }
-
-    const filtered = defaultCollectPosts
-      .filter((post) => group.includes(post.groupName))
-      .map((post) => ({ PostId: post.PostId }));
-    const filteredWithPostDetails = checkGroup.filter((post) =>
-      filtered.some((item) => item.PostId === post.id)
-    );
-
-    setFilterPosts(filteredWithPostDetails);
-    setClickCollection(!clickCollection);
-    setSelectFolder(group);
-  };
-
-  const editFolder = (folderName) => {
-    const newFolderName = !newNameFolder ? selectFolder : newNameFolder;
-    console.log("Имя группы",selectFolder)
-    console.log("Имя инпута",newNameFolder)
-    if(addPostId.length === 0) {
-      postRef.current.notifyError("Выберите посты")
-    } else {
-      if (newFolderName) {
-        axios
-          .put(
-            `http://localhost:3001/collection/editcollection/${folderName}`,
-            {
-              newGroupName: newFolderName,
-              PostId: addPostId,
-            },
-            {
-              withCredentials: true,
-            }
-          )
-          .then((response) => {
-            console.log(response.data);
-            setGroupPosts(response.data.filteredGroupArr);
-            setShowEditFolder(false);
-            setFocus(false)
-          })
-          .catch((error) => {
-            console.error(error);
-          });
-      }
-      // Удалить groupName у постов, которые были удалены из папки
-      const postsToRemove = defaultCollectPosts.filter((post) => {
-        return !addPostId.includes(post.PostId);
-      });
-  
-      if (postsToRemove.length > 0) {
-        axios
-          .put(
-            `http://localhost:3001/collection/editcollection/${folderName}`,
-            {
-              newGroupName: null,
-              PostId: postsToRemove.map((post) => post.PostId),
-            },
-            {
-              withCredentials: true,
-            }
-          )
-          .then((response) => {
-            console.log(response.data);
-          })
-          .catch((error) => {
-            console.error(error);
-          });
-      }
-
-    }
-
-  };
-
-  const deleteFolder = (folderName) => {
-    axios
-      .delete(
-        `http://localhost:3001/collection/deletecollection/${folderName}`,
-        {
-          withCredentials: true,
-        }
-      )
-      .then((response) => {
-        console.log(response.data);
-        setGroupPosts(response.data.filteredGroupArr);
-        setUpdateContent(!updateContent)
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-  };
-
-  const handleEditFolder = () => {
-    setAddPostId(filterPosts.map((post) => post.id));
-    setShowEditFolder(true);
-  };
-
-  const closeModal = () => {
-    setShowEditFolder(false)
-    setFocus(false)
-    
-  }
 
   return (
     <div className="profile">
@@ -375,7 +307,7 @@ function Profile() {
         </>
         <h1>{userInfo}</h1>
 
-          <SubscriptionButton userId={id} visible={true} username={userInfo}/>
+        <SubscriptionButton userId={id} visible={true} username={userInfo} />
 
         <div className="profileNavigation">
           <button onClick={() => setChangeContent("posts")}>
@@ -464,292 +396,113 @@ function Profile() {
           </button>
           <div className="underline"></div>
         </div>
-        {changeContent == "subscribers" && <FollowersList userId={id} content={updateChangeContent} />}
-        {changeContent == "subscriptions" && <FollowingList userId={id} content={updateChangeContent} />}
+        {changeContent == "subscribers" && (
+          <FollowersList userId={id} content={updateChangeContent} />
+        )}
+        {changeContent == "subscriptions" && (
+          <FollowingList userId={id} content={updateChangeContent} />
+        )}
       </div>
       {changeContent == "posts" && (
-        <>
-          <h1 className="postsInfo">Посты созданные пользователем {userInfo}</h1>
+        <div className="postsCreatingUser">
+          <h1 className="postsInfo">
+            Посты созданные пользователем {userInfo}
+          </h1>
           <div className="main-cards">
             {listOfPosts.map((post) => (
               <div className="cards" key={post.id}>
-                <div
-                  className="card"
-                  onClick={() => {
-                    navigate(`/post/${post.id}`);
-                  }}
-                >
-                  <img src={post.imagePath} alt="Пост" />
-                  <div>{post.title}</div>
-                  <div>{post.username}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-      {changeContent == "likes" && (
-        <div className="users_likes">
-          <h2>Понравившееся посты</h2>
-          <div className="main-cards">
-            {likedPosts.map((post) => (
-              <div className="cards" key={post.id}>
-                <div
-                  className="card"
-                  onClick={() => {
-                    navigate(`/post/${post.id}`);
-                  }}
-                >
-                  <img src={post.imagePath} alt="Пост" />
-                  <div>{post.title}</div>
-                  <div>{post.username}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {changeContent == "marks" && (
-        <div className="users_likes">
-          <h2>Коллекции</h2>
-          {authState.id === Number(id) && (
-          <button
-            className="addCollectionBtn"
-            onClick={() => {
-              showGroup();
-            }}
-          >
-            {showAddGroup ? "Закрыть" : "Добавить коллекцию"}
-          </button>
-          )} 
-          {showAddGroup === true ? (
-            <div className="inCollection">
-              <h3>Добавление новой папки коллекций</h3>
-              <input
-                className="inputAddGroup"
-                type="text"
-                placeholder="Введите имя группы"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-              />
-              <button
-                className="addGroupBtn"
-                onClick={() => addGroupToCollection(collectPosts.id)}
-              >
-                Добавить группу
-              </button>
-              <div className="collectionsNotify">
-                <h3>Выберите посты из списка ниже и назовите свою коллекцию</h3>
-              </div>
-              <div className="main-cards">
-                {collectPosts.map((post) => (
-                  <div className="cards" key={post.id}>
-                    <div
-                      className="card"
-                      onClick={() => {
-                        addPost(post.id);
-                      }}
-                    >
-                      <div className="imgConatainer">
-                        <img src={post.imagePath} alt="Пост" />
-                        {addPostId.includes(post.id) && (
-                          <svg
-                            className="plus"
-                            xmlns="http://www.w3.org/2000/svg"
-                            height="80px"
-                            viewBox="0 -960 960 960"
-                            width="80px"
-                            fill="#ffffff"
-                          >
-                            <path d="M200-120v-640q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v640L480-240 200-120Z" />
-                          </svg>
-                        )}
-                      </div>
-                      <div>{post.title}</div>
-                      <div>{post.username}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div>
-              {authState.id === Number(id) && (
-              <div>
-                <h2>Папки:</h2>
-                <div className="folder">
-                  {groupPosts && groupPosts.length > 0 ? (
-                    groupPosts.map((group, index) => (
-                      <div
-                        className="folders"
-                        style={{
-                          boxShadow:
-                            selectFolder == group && clickCollection == true
-                              ? "0px 0px 12px rgba(0, 0, 0, 0.4)"
-                              : "",
-                        }}
-                        onClick={() => {
-                          filteredPosts(group);
-                        }}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          height="200px"
-                          viewBox="0 -960 960 960"
-                          width="200px"
-                          fill="#0052ff"
-                        >
-                          <path d="M146.67-160q-27 0-46.84-20.17Q80-200.33 80-226.67v-506.66q0-26.34 19.83-46.5Q119.67-800 146.67-800H414l66.67 66.67h332.66q26.34 0 46.5 20.16Q880-693 880-666.67v440q0 26.34-20.17 46.5Q839.67-160 813.33-160H146.67Zm0-66.67h666.66v-440H453l-66.67-66.66H146.67v506.66Zm0 0v-506.66V-226.67Z" />
-                        </svg>
-                        <p key={index}>{group}</p>
-                        {selectFolder == group && clickCollection && (
-                          <div className="folder_buttons">
-                            <div className="line"></div>
-                            <button
-                              className="edit-folder folder_btn"
-                              onClick={handleEditFolder}
-                            >
-                              Редактировать
-                            </button>
-                            <button
-                              className="delete-folder folder_btn"
-                              onClick={() => deleteFolder(group)}
-                            >
-                              Удалить
-                            </button>
-                          </div>
-                        )}
-
-                        {/*МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ ПАПКИ КОЛЛЕКЦИЙ*/}
-                        {showEditFolder && (
-                          <div
-                            className="editFolder"
-                            onClick={() => closeModal()}
-                          >
-                            <div
-                              className="editFolderWindow"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <h3 className="nameFolderEdit">Редактирование папки <span>{group}</span></h3>
-                              <input
-                                className="editInput"
-                                onFocus={() => setFocus(true)}
-                                type="text"
-                                placeholder="Введите новое название папки"
-                                onChange={(e) =>
-                                  setNewNameFolder(e.target.value)
-                                }
-                              />
-                              <div id="comment_bubble" style={{display: focus ? "none" : "block"}}>Если не ввести новое название тогда сохраниться прежнее</div>
-                               <button
-                              className="editFolderSaveBtn"
-                                type="button"
-                                onClick={() => {
-                                  editFolder(group);
-                                }}
-                              >
-                                Сохранить изменения
-                              </button>
-                              <div className="main-cards">
-                                {collectPosts.map((post) => (
-                                  <div className="cards" key={post.id}>
-                                    <div
-                                      className="card"
-                                      onClick={() => {
-                                        addPost(post.id);
-                                      }}
-                                    >
-                                      <div className="imgConatainer">
-                                        <img src={post.imagePath} alt="Пост" />
-
-                                        {addPostId.includes(post.id) && (
-                                          <svg
-                                            className="plus"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            height="80px"
-                                            viewBox="0 -960 960 960"
-                                            width="80px"
-                                            fill="#ffffff"
-                                          >
-                                            <path d="M200-120v-640q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v640L480-240 200-120Z" />
-                                          </svg>
-                                        )}
-                                      </div>
-                                      <div>{post.title}</div>
-                                      <div>{post.username}</div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                             
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <p>Папки не найдены.</p>
+                <div className="card">
+                  <img
+                    onClick={() => {
+                      navigate(`/post/${post.id}`);
+                    }}
+                    className="postImg"
+                    onMouseEnter={() => {
+                      setFocusImage(post.id);
+                    }}
+                    onMouseLeave={() => {
+                      setFocusImage(null);
+                    }}
+                    src={post.imagePath}
+                    alt="Пост"
+                  />
+                  {authState.id !== Number(id) && (
+                    <UsersButtons
+                      post={post}
+                      focusImage={focusImage}
+                      focusBtn={focusBtn}
+                      setFocusBtn={setFocusBtn}
+                      authState={authState}
+                      setListOfPosts={setListOfPosts}
+                      listOfPosts={listOfPosts}
+                      setFilteredPosts={setAddCollectPosts}
+                      filteredPosts={addCollectPosts}
+                    />
                   )}
                 </div>
               </div>
-              )}
-              {clickCollection && (
-                <div className="collection">
-                  <h2>Выбранная папка: {selectFolder}</h2>
-                  <div className="main-cards">
-                    {filterPosts.map((post) => (
-                      <div className="cards" key={post.id}>
-                        <div
-                          className="card"
-                          onClick={() => {
-                            navigate(`/post/${post.id}`);
-                          }}
-                        >
-                          <img src={post.imagePath} alt="Пост" />
-                          <div>{post.title}</div>
-                          <div>{post.username}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {!clickCollection && (
-                <>
-                  <button
-                    className="showGroupName"
-                    onClick={() => setClickViewCollect(!clickViewCollect)}
-                  >
-                    Показать имена групп
-                  </button>
-                  <div className="main-cards">
-                    {collectPosts.map((post) => (
-                      <div className="cards" key={post.id}>
-                        <div
-                          className="card"
-                          onClick={() => {
-                            navigate(`/post/${post.id}`);
-                          }}
-                        >
-                          {clickViewCollect && (
-                            <p className="nameGroup">
-                              {collect.map((col) =>
-                                post.id === col.PostId ? col.groupName : ""
-                              )}
-                            </p>
-                          )}
-                          <img src={post.imagePath} alt="Пост" />
-                          <div>{post.title}</div>
-                          <div>{post.username}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+            ))}
+          </div>
         </div>
+      )}
+      {console.log(likedPosts)}
+      {changeContent == "likes" && (
+        
+        <ProfileLikes
+          focusImage={focusImage}
+          setFocusImage={setFocusImage}
+          focusBtn={focusBtn}
+          setFocusBtn={setFocusBtn}
+          authState={authState}
+          setLikedPosts={setLikedPosts}
+          likedPosts={likedPosts}
+          setAddCollectPosts={setAddCollectPosts}
+          addCollectPosts={addCollectPosts}
+        />
+      )}
+      {changeContent == "marks" && (
+        <ProfileCollections 
+        focusImage={focusImage}
+        setFocusImage={setFocusImage}
+        focusBtn={focusBtn}
+        setFocusBtn={setFocusBtn}
+        authState={authState}
+        setLikedPosts={setLikedPosts}
+        likedPosts={likedPosts}
+        setAddCollectPosts={setAddCollectPosts}
+        addCollectPosts={addCollectPosts}
+        userInfo={userInfo}
+        addPostId={addPostId}
+        setAddPostId={setAddPostId}
+        groupPosts={groupPosts}
+        setGroupPosts={setGroupPosts}
+        filterPosts={filterPosts}
+        setFilterPosts={setFilterPosts}
+        clickCollection={clickCollection}
+        setClickCollection={setClickCollection}
+        checkGroup={checkGroup}
+        defaultCollectPosts={defaultCollectPosts}
+        selectFolder={selectFolder}
+        setSelectFolder={setSelectFolder}
+        collect={collect}
+        setCollect={setCollect}
+        clickViewCollect={clickViewCollect}
+        setClickViewCollect={setClickViewCollect}
+        showEditFolder={showEditFolder}
+        setShowEditFolder={setShowEditFolder}
+        focus={focus}
+        setFocus={setFocus}
+        newNameFolder={newNameFolder}
+        setNewNameFolder={setNewNameFolder}
+        updateContent={updateContent}
+        setUpdateContent={setUpdateContent}
+        setShowAddGroup ={setShowAddGroup}
+        showAddGroup={showAddGroup}
+        id={id}
+        setCollectPosts={setCollectPosts}
+        collectPosts={collectPosts}
+        navigate={navigate}
+        />
       )}
     </div>
   );

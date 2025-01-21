@@ -75,8 +75,11 @@ svg {
   padding: 13px;
   background-color: rgba(228, 15, 0, 0.836);
   border-radius: 40px;
-  color: white;
   cursor: pointer;
+}
+
+.registration strong {
+  color: white;
 }
 
 .registration:hover {
@@ -102,6 +105,235 @@ svg {
   background-color: rgba(192, 13, 0, 0.712);
   transition: .4s;
 }
+
+.lookAtPosts {
+  color: #000;
+  padding: 12px;
+  border-radius: 30px;
+  cursor: pointer;
+  position: absolute;
+  top: 28%;
+  left: 12%;
+  font-size: 16px;
+}
+
+/*------------LANDING PAGE------------*/
+
+.landing {
+  margin-top: 4%;
+}
+
+section {
+  width: 1920px;
+}
+
+.section {
+  width: 1920px;
+  height: 800px;
+  overflow: hidden;
+  position: relative;
+}
+
+.section h1 {
+  font-size: 48px;
+  position: absolute;
+  top: 16%;
+  left: 37%;
+}
+.frameInfo {
+  font-size: 48px;
+  position: absolute;
+  top: 26%;
+  left: 40%;
+  color: green;
+  font-weight: 200;
+}
+
+.noneClass {
+  display: none;
+}
+
+.exit {
+  animation: visibleExit 1s forwards;
+}
+
+.enter {
+  animation: visible 2s ease-in-out forwards;
+}
+
+.homeFrame {
+  left: 37%;
+}
+
+.styleFrame {
+  left: 37.5%;
+}
+
+.landingNavButtons {
+  position: absolute;
+  top: 40%;
+  left: 47%;
+  display: flex;
+  gap: 10px;
+}
+
+.landingBtn {
+  width: 14px;
+  height: 14px;
+  background-color: #000;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.viewCollections {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 10%;
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+  mask-image: linear-gradient(to bottom, rgb(0, 0, 0) 40%, transparent 67%);
+}
+
+.viewCollections img {
+  width: 231px;
+  height: 324px;
+  cursor: default;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.styleCollections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.firstCollection, .fifthCollection {
+  margin-top: 6%;
+}
+
+.secondCollection, .fourthCollection {
+  margin-top: 12%;
+}
+
+.thirdCollection {
+  margin-top: 18%;
+}
+
+/*----animations landing page----*/
+
+.first-Collection {
+  opacity: 0;
+  animation: visible 2s ease-in-out forwards;
+  animation-delay: 0s;
+}
+
+.firstCollection {
+  opacity: 0;
+  animation: visible 2s ease-in-out forwards;
+  animation-delay: 0.3s;
+}
+
+.secondCollection {
+  opacity: 0;
+  animation: visible 2s ease-in-out forwards;
+  animation-delay: 0.6s;
+}
+
+.thirdCollection {
+  opacity: 0;
+  animation: visible 2s ease-in-out forwards;
+  animation-delay: 0.9s;
+}
+
+.fourthCollection {
+  opacity: 0;
+  animation: visible 2s ease-in-out forwards;
+  animation-delay: 1.2s;
+}
+
+.fifthCollection {
+  opacity: 0;
+  animation: visible 2s ease-in-out forwards;
+  animation-delay: 1.5s;
+}
+
+.sixthCollection {
+  opacity: 0;
+  animation: visible 2s ease-in-out forwards;
+  animation-delay: 1.8s;
+}
+
+
+.secondSection {
+  background-color: rgb(253, 241, 133);
+  height: 900px;
+}
+
+.imagesArea {
+  position: relative;
+  width: 50%;
+  height: 900px;
+}
+
+.centerImage {
+  width: 350px;
+  height: 500px;
+  object-fit: cover;
+  border-radius: 56px;
+  position: absolute;
+  top: 20%;
+  left: 30%;
+  z-index: 2;
+}
+
+.pageLink {
+  position: absolute;
+  z-index: 3;
+  top: 40%;
+  left: 25%;
+  background-color: white;
+  padding: 28px;
+  border-radius: 46px;
+  width: 35%;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.pageLink h1 {
+  font-size: 25px;
+  color: rgb(12, 46, 158);
+  left: 12%;
+  top: 24%;
+}
+
+.backImage {
+  width: 150px;
+  height: 250px;
+  border-radius: 36px;
+  object-fit: cover;
+  position: absolute;
+  z-index: 1;
+}
+
+.imagesArea img:nth-child(1) {
+  top: 60%;
+  left: 62%;
+}
+.imagesArea img:nth-child(2) {
+  top: 16%;
+  left: 63%;
+}
+.imagesArea img:nth-child(3) {
+  top: 36%;
+  left: 17%;
+}
+
+
+
+
 
 /*------------LOGIN & REGISTER PAGE------------*/
 
@@ -240,8 +472,12 @@ label {
   
 }
 
-.cards {
+.postsCreatingUser {
+  margin: 0 auto;
+  width: 1220px;
+}
 
+.cards {
   border-radius: 15px;
   break-inside: avoid;
   margin-bottom: 1rem;
@@ -254,19 +490,21 @@ label {
   position: relative;
 }
 
-.card .postImg {
+.postImg {
   width: 100%;
   border-radius: 12px;
 }
 
-.card .postImg:hover {
+.postImg:hover {
   filter: brightness(50%);
 }
+
+
 
 .postButtons {
   position: absolute;
   top: 0;
-  left: 4%;
+  right: 57%;
   display: flex;
   align-items: center;
   gap: 40%;
@@ -287,6 +525,19 @@ label {
   margin-left: 4px;
 }
 
+.userAvatarInProfilePages {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-left: 4px;
+}
+
+.userInProfilePages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .postTitle {
   text-align: left;
   margin: 4px 0 4px 4px;
@@ -300,6 +551,86 @@ label {
   overflow-y: hidden;
   white-space: nowrap;
   scroll-behavior: smooth;
+}
+
+.editPostForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.editPostForm .tag {
+
+  width: auto;
+}
+
+.editPostForm input[type=text] {
+  background-color: #3333331c;
+  padding: 12px;
+  margin-top: 19px;
+  border-radius: 12px;
+}
+
+.editPostForm button {
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #3333331c;
+  margin-top: 8%;
+  cursor: pointer;
+}
+
+.editPostForm button:hover {
+  background-color: #3333335b;
+}
+
+.newImagePost {
+  width: 46%;
+}
+
+.nameOfNewImage {
+  margin-top: 16%;
+  width: 220%; 
+  pointer-events: none;
+}
+
+.nameOfNewImage p {
+  overflow-wrap: break-word;
+  width: 100%;
+
+}
+
+.notification {
+  position: absolute;
+  top: 18.5%;
+  left: 58%;
+  display: flex;
+  align-items: center;
+  background-color: rgb(138, 223, 138);
+  padding: 8px 24px;
+  border-radius: 12px;
+}
+
+
+.notifyMark {
+  stroke-dasharray: 1845; /* Длина пути галочки */
+  stroke-dashoffset: 1845; /* Начальный отсчет, путь скрыт */
+  animation: draw 2s ease forwards; /* Анимация рисования */
+}
+
+
+.newImagePost input {
+  display: none;
+}
+.newImagePost span {
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #3333331c;
+  cursor: pointer;
+
+}
+
+.newImagePost span:hover {
+  background-color: #3333335b;
 }
 
 .scroll-btn {
@@ -353,17 +684,21 @@ label {
 
 .subscriptionButton {
   background-color: rgb(255, 0, 13);
-  padding: 6px 12px;
+  padding: 14px 46px;
   border-radius: 8px;
   cursor: pointer;
   color: white;
+  font-size: 15px;
+  font-weight: 600;
 }
 .unSubscriptionButton {
   background-color: rgba(0, 0, 0, 0.336);
-  padding: 6px 12px;
+  padding: 14px 46px;
   border-radius: 8px;
   cursor: pointer;
   color: white;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 
@@ -518,7 +853,33 @@ label {
   transition: .2s;
 }
 
+.modal .addTags {
+  margin-top: 10px;
+  color: #000;
+}
 
+.modal .addTags:hover {
+  background-color: #3333335b;
+}
+
+.deletePostBtn {
+  padding: 12px 48px;
+  background-color: #3333331c;
+  border-radius: 12px;
+}
+
+.deletePostBtn:hover {
+  cursor: pointer;
+  background-color: #33333367;
+}
+
+.deletePostButtons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8%;
+}
 
 /*------------POST------------*/
 
@@ -606,7 +967,7 @@ label {
 .addCommentContainer .send-button {
   position: absolute;
   top: 0%;
-  left: 78%;
+  left: 85%;
   background-color: rgb(194, 192, 192);
   color: #fff;
   border: none;
@@ -623,21 +984,20 @@ label {
 
 .text-comment {
   width: 70%;
-  padding: 10px 25px 10px 5px;
+  padding: 11px 25px 11px 5px;
   border: solid 1px grey;
-  border-radius: 22px;
+  border-radius: 0 10px 10px 0;
   margin-bottom: 20px;
-  margin-right: 25%;
+  margin-right: 10%;
 }
 
 .clip {
   position: absolute;
-  left: 70.3%;
+  left: -3%;
+  border: 1px solid grey;
+  border-radius: 10px 0 0 10px;
   top: 0%;
-  background-color: rgb(194, 192, 192);
-  border-radius: 0 8px 8px 0;
-  border:  solid 1px grey;
-  height: 62%;
+  padding: 0.72px 5px;
 }
 
 .clip:hover {
@@ -665,10 +1025,26 @@ label {
   margin-top: 20px;
   box-shadow: 0 0 8px rgb(172, 172, 172);
 }
+.commentWithoutShadow {
+  padding: 20px;
+  border-radius: 15px;
+  margin-top: 20px;
+}
+
+.commentLength {
+  margin: 6% 60% 0 0;
+}
+
+.usernameAvatarSub {
+  display: flex;
+  align-items: center;
+  gap: 50%;
+}
+
 .username-commentBody {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+
+  align-items: center;
   gap: 5px;
 }
 
@@ -912,14 +1288,12 @@ label {
   background-color: #33333365;
 }
 
-.imageContainer {
-  position: relative;
-}
 
-.plus {
+.card .plus {
+  margin: 0 0;
   position: absolute;
-  left: 70%;
-  top: -2%;
+  left: 25%;
+  top: 20%;
   z-index: 1300;
 }
 
@@ -1148,6 +1522,7 @@ label {
   background-color: rgba(128, 128, 128, 0.664);
 }
 
+
 .no-scroll {
   overflow: hidden;
 }
@@ -1198,16 +1573,21 @@ label {
   flex-direction: column;
   align-items: center;
   position: fixed;
-  z-index: 1200;
+  z-index: 3000;
   background-color: rgb(253, 253, 253);
   box-shadow: 0 0 12px black;
   border-radius: 12px;
-  max-width: 63%;
+  width: 63%;
   max-height: 90%;
   overflow-y: auto;
   overflow-x: hidden;
   top: 4%;
   left: 20%;
+}
+
+.editFolderWindow .main-cards {
+  column-count: 3;
+  width: 800px;
 }
 
 .editFolderWindow .main-cards {
@@ -1280,11 +1660,22 @@ label {
   100% {transform: translateY(-40%); z-index: -1;}
 }
 
-
-
 @keyframes exit {
   0% {opacity: 1;}
   100% {opacity: 0;}
 }
 
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0; /* Полностью нарисованная линия */
+  }
+}
 
+@keyframes visible {
+  0% {transform: translateY(100%); opacity: 0;}
+  100% {transform: translateY(0%); opacity: 1;}
+}
+@keyframes visibleExit {
+  0% {transform: translateY(0%); opacity: 1;}
+  100% {transform: translateY(-100%); opacity: 0; display: none;}
+}
