@@ -188,9 +188,9 @@ function Profile() {
           canvas.toBlob((blob) => {
             resolve(blob); // Возвращаем изображение как Blob
           }, "image/jpeg"); // Или "image/png", в зависимости от формата
-          if (confirm("Хотите перезагрузить страницу?")) {
+
             location.reload();
-          }
+          
         } catch {
           alert("Фото не было изменено");
           setCheckUserPick(false);
@@ -445,7 +445,7 @@ function Profile() {
           </div>
         </div>
       )}
-      {console.log(likedPosts)}
+
       {changeContent == "likes" && (
         
         <ProfileLikes

@@ -122,7 +122,7 @@ function Landing() {
     });
     currentSectionIndex = index;
     isScrolling = true;
-    setTimeout(() => (isScrolling = false), 1000); // Устанавливаем задержку для предотвращения частой прокрутки
+    setTimeout(() => (isScrolling = false), 100); // Устанавливаем задержку для предотвращения частой прокрутки
   }
 
   // Событие прокрутки колеса

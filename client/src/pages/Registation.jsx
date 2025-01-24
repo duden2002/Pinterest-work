@@ -15,7 +15,8 @@ function Registation({closeModal, openLogin}) {
   const onSubmit = (data) => {
     axios.post("http://localhost:3001/auth", data).then((response) => {
       if (response.data.error) {
-        regRef.current.notifyError("Ошибка")
+        console.log("error")
+        regRef.current.notifyError(response.data.error)
       }
       else {
         console.log("User Created")

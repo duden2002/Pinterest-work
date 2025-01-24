@@ -57,7 +57,7 @@ function CreatePost() {
     })
     .then((response) => {
       console.log("Пост создан успешно!", response);
-      navigate("/")
+      navigate("/posts")
       postRef.current.notifySuccess("Пост создан успешно!");
     })
     .catch(error => postRef.current.notifyError("Ошибка при создании поста: ", error));
@@ -102,7 +102,7 @@ function CreatePost() {
             Добавить тэг
           </button>
         </div>
-        <div className="tags-list">
+        <div className="tags-list" style={{ alignItems: 'center', width: 520 }}>
           <div className={visible ? "tooltip" : "tool-exit"}>Нажмите на тэг чтобы удалить</div>
           {tags.map((tag, index) => (
               <span key={index} className="tag" onClick={() => removeTag(tag)}>

@@ -7,6 +7,7 @@ const {sign} = require("jsonwebtoken")
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { where } = require("sequelize");
 
 // Настройка хранилища для аватарок
 const storage = multer.diskStorage({
@@ -24,8 +25,13 @@ const upload = multer({ storage: storage });
 router.post("/", async (req, res) => {
   try {
     const { username, password } = req.body;
+    const isUser = await Users.findOne({ where: { username: username } });
+
     if (!username || !password) {
-      return res.status(400).json({ error: "Username and password are required." });
+      return res.json({ error: "Требуются имя пользователя и пароль." });
+    }
+    if (isUser) {
+      return res.json({ error: "Пользователь с таким именем уже существует." });
     }
     const hash = await bcrypt.hash(password, 10);
     await Users.create({
@@ -77,7 +83,8 @@ router.get("/auth", validateToken, (req, res) => {
 router.get("/basicinfo/:id", async (req, res) => {
   const id = req.params.id;
   try {
-    const basicInfo = await Users.findByPk(id, { attributes: { exclude: ["password"] } });
+    const basicInfo = await Users.findByPk(id, { attributes: { exclude: ["password"] }});
+
     if (!basicInfo) {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
@@ -168,7 +175,6 @@ router.post("/unsubscribe/:userId", validateToken, async (req, res) => {
 
 router.get("/subscriptions/status/:userId", validateToken, async (req, res) => {
   const { userId } = req.params;
-  console.log(userId)
 
   try {
     // Проверяем, подписан ли текущий пользователь (req.user.id) на пользователя userId
@@ -204,7 +210,6 @@ router.get("/followers/:userId", async (req, res) => {
       return res.status(404).json({ error: "Пользователь не найден" });
     }
    
-    console.log(user.Followers.map((user) => user.dataValues))
 
     const usersPhotos = user.Followers.map((user) => ({
       ...user.dataValues,
@@ -212,8 +217,7 @@ router.get("/followers/:userId", async (req, res) => {
       ? `http://localhost:3001/${user.userPhoto}`.replace("\\", "/")
       : null
     }))
-
-    console.log(usersPhotos)
+    console.log("Followdsfsdfers",usersPhotos.lenght)
 
     res.json(usersPhotos);
   } catch (error) {

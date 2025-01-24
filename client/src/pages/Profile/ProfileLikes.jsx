@@ -7,7 +7,7 @@ function ProfileLikes( {focusImage, setFocusImage, focusBtn, setFocusBtn, authSt
     }, [likedPosts])
   return (
     <div className="users_likes">
-          <h2>Понравившееся посты</h2>
+          <h2>Лайки</h2>
           <div className="main-cards">
             {likedPosts && (likedPosts.map((post) => (
               <div className="cards" key={post.id}>
