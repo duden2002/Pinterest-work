@@ -53,7 +53,9 @@ function App() {
   return (
     <div>
       <ToastContainer />
-      <AuthContext.Provider value={{ authState, setAuthState, setShowRegistModal, showRegistModal }}>
+      <AuthContext.Provider
+        value={{ authState, setAuthState, setShowRegistModal, showRegistModal, setViewPostsButton, viewPostsButton }}
+      >
         <Router>
           <header>
             <div className="links">
@@ -65,7 +67,23 @@ function App() {
               </Link>
               <Link to={"/posts"}>
                 <div>
-                  <button className="lookAtPosts" onClick={() => setViewPostsButton(!viewPostsButton)} style={{backgroundColor: viewPostsButton ? 'black' : "transparent"}} disabled={viewPostsButton}><strong style={{color: viewPostsButton ? "white" : "black"}}>Просмотреть</strong></button>
+                  <button
+                    className="lookAtPosts"
+                    onClick={() => setViewPostsButton(!viewPostsButton)}
+                    style={{
+                      backgroundColor: viewPostsButton
+                        ? "black"
+                        : "transparent",
+                    }}
+                    disabled={viewPostsButton}
+                    
+                  >
+                    <strong
+                      style={{ color: viewPostsButton ? "white" : "black" }}
+                    >
+                      Просмотреть
+                    </strong>
+                  </button>
                 </div>
               </Link>
               {!authState.status ? (

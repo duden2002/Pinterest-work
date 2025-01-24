@@ -5,9 +5,11 @@ import { AuthContext } from '../helpers/AuthContext'
 import axios from 'axios'
 import logo from '../assets/logo.png'
 import Notifications from '../components/Notifications';
+import { useNavigate } from 'react-router-dom'
 
 function Login({ closeModal, openRegistration}) {
     let authRef = useRef(null)
+    const navigate = useNavigate()
     const { setAuthState } = useContext(AuthContext)
 
     const initialValues = {
@@ -26,7 +28,6 @@ function Login({ closeModal, openRegistration}) {
             .then((response) => {
                 console.log("dfgfddfgg",response)
                 if (response.data.error) {
-                    console.log("dfgfddfgg",response)
                     authRef.current.notifyError("Неправильно введен имя пользователя и/или пароль")
                 } else {
                     console.log("dfgfddfgg",response)
@@ -35,6 +36,7 @@ function Login({ closeModal, openRegistration}) {
                         id: response.data.id,
                         status: true
                     })
+                    navigate('/posts')
                     closeModal()  // Close the modal after successful login
                     authRef.current.notifySuccess(`Добро пожаловать ${data.username}`)
                     

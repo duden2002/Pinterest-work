@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import axios from "axios";
+import { getFollowers } from "../api";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { AuthContext } from "../helpers/AuthContext";
 import SubscriptionButton from "../components/SubscriptionButton";
@@ -19,7 +20,7 @@ function Post() {
   const [error, setError] = useState("");
   const [checkComment, setCheckComment] = useState(false);
   const { authState } = useContext(AuthContext);
-  const [username, setUsername] = useState({});
+  const [username, setUsername] = useState();
   const [subUser, setSubUser] = useState({});
   const [checkSubscribe, setCheckSubscribe] = useState(false);
   const [userPhoto, setUserPhoto] = useState("");
@@ -28,72 +29,90 @@ function Post() {
   const [tagInput, setTagInput] = useState("");
   const [updateContent, setUpdateContent] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [followers, setFollowers] = useState([])
 
   useEffect(() => {
-    axios.get(`http://localhost:3001/posts/byId/${id}`).then((response) => {
-      try {
-        setPostObject(response.data);
-        setTags(response.data.tags.split(","));
-        setUsername(response.data.UserId);
-      } catch {
-        (error) => console.log("Ошибка при получении поста", error);
-      }
-    });
-
-    axios
-      .get(`http://localhost:3001/comment/${id}`)
-      .then((response) => {
-        const postsWithPhotos = response.data.comments.map((post) => {
-          const userPhoto = Array.isArray(response.data.user)
-            ? response.data.user.find((user) => user.username === post.username)
-            : null;
-
-          const userId = Array.isArray(response.data.user)
-            ? response.data.user.find((user) => user.username === post.username)
-            : null;
-
-          return {
-            ...post,
-            UserId: userId.username.includes(post.username) ? userId.id : null,
-            userPhoto:
-              userPhoto &&
-              userPhoto.userPhoto &&
-              !userPhoto.userPhoto.includes("null")
-                ? `http://localhost:3001/${userPhoto.userPhoto}`
-                : null,
-          };
-        });
-        setComments(postsWithPhotos);
-      })
-      .catch((error) =>
-        console.error("Ошибка при получении комментариев", error)
-      );
-
-    if (authState.token) {
-      axios
-        .get(`http://localhost:3001/auth/subscriptions/status/${username}`, {
-          withCredentials: true,
-        })
+    const fetchAxios = async () => {
+      await axios.get(`http://localhost:3001/posts/byId/${id}`).then((response) => {
+        try {
+          setPostObject(response.data);
+          setTags(response.data.tags.split(","));
+          setUsername(response.data.UserId);
+        } catch {
+          (error) => console.log("Ошибка при получении поста", error);
+        }
+      });
+  
+      await axios
+        .get(`http://localhost:3001/comment/${id}`)
         .then((response) => {
-          setCheckSubscribe(response.data.isSubscribed);
-          setSubUser(response.data.subscribed);
+          const postsWithPhotos = response.data.comments.map((post) => {
+            const userPhoto = Array.isArray(response.data.user)
+              ? response.data.user.find((user) => user.username === post.username)
+              : null;
+  
+            const userId = Array.isArray(response.data.user)
+              ? response.data.user.find((user) => user.username === post.username)
+              : null;
+  
+            return {
+              ...post,
+              UserId: userId.username.includes(post.username) ? userId.id : null,
+              userPhoto:
+                userPhoto &&
+                userPhoto.userPhoto &&
+                !userPhoto.userPhoto.includes("null")
+                  ? `http://localhost:3001/${userPhoto.userPhoto}`
+                  : null,
+            };
+          });
+          setComments(postsWithPhotos);
         })
-        .catch((error) => {
-          console.error("Ошибка проверки статуса подписки", error);
-        });
+        .catch((error) =>
+          console.error("Ошибка при получении комментариев", error)
+        );
+  
+      if (authState.token) {
+        await axios
+          .get(`http://localhost:3001/auth/subscriptions/status/${username}`, {
+            withCredentials: true,
+          })
+          .then((response) => {
+            setCheckSubscribe(response.data.isSubscribed);
+            setSubUser(response.data.subscribed);
+          })
+          .catch((error) => {
+            console.error("Ошибка проверки статуса подписки", error);
+          });
+      }
+  
+      // Загрузка рекомендаций
+      await axios
+        .get(`http://localhost:3001/posts/recommendations/${id}`)
+        .then((response) => {
+          setRecommendations(response.data.recommendations); // Устанавливаем полученные рекомендации
+        })
+        .catch((error) =>
+          console.error("Ошибка при получении рекомендаций:", error)
+        );
     }
-
-    // Загрузка рекомендаций
-    axios
-      .get(`http://localhost:3001/posts/recommendations/${id}`)
-      .then((response) => {
-        setRecommendations(response.data.recommendations); // Устанавливаем полученные рекомендации
-      })
-      .catch((error) =>
-        console.error("Ошибка при получении рекомендаций:", error)
-      );
     window.scrollTo(0, 0);
+    fetchAxios()
   }, [id, checkComment, updateContent]);
+
+  const fetchFollowers = async () => {
+    try {
+      const response = await getFollowers(username);
+      setFollowers(response.data);
+    } catch (error) {
+      console.error("Ошибка при получении подписчиков:", error);
+    }
+  };
+
+  if (followers.length === 0) {
+    fetchFollowers();
+  }
+
 
   axios
     .get(`http://localhost:3001/auth/basicinfo/${username}`)
@@ -120,7 +139,7 @@ function Post() {
     axios
       .delete(`http://localhost:3001/posts/${id}`, { withCredentials: true })
       .then(() => {
-        navigate("/");
+        navigate("/posts");
         notiRef.current.notifySuccess(`Пост ${title} успешно удален`);
       });
   };
@@ -232,6 +251,21 @@ function Post() {
         return "комментарий"
     }
   };
+  const followersActions = (number) => {
+    switch(number) {
+      case 1:
+        return "подписчик"
+        break;
+      case 2:
+      case 3:
+      case 4:
+        return "подписчика"
+        break;
+      default:
+        return "подписчиков"
+    }
+  };
+
 
   return (
     <div className="posts">
@@ -243,13 +277,13 @@ function Post() {
         <div className="post-description">
           <div className="title-username">
             <h1>{postObject.title}</h1>
-            <div>
+            <div className="tags-list">
               {postObject.tags &&
                 postObject.tags.split(",").map((tag, index) => (
                   <span
                     key={index}
                     className="tag"
-                    onClick={() => navigate(`/?tags=${tag.trim()}`)}
+                    onClick={() => navigate(`/posts/?tags=${tag.trim()}`)}
                   >
                     {tag.trim()}
                   </span>
@@ -274,7 +308,10 @@ function Post() {
                       <path d="M234-276q51-39 114-61.5T480-360q69 0 132 22.5T726-276q35-41 54.5-93T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 59 19.5 111t54.5 93Zm246-164q-59 0-99.5-40.5T340-580q0-59 40.5-99.5T480-720q59 0 99.5 40.5T620-580q0 59-40.5 99.5T480-440Zm0 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q53 0 100-15.5t86-44.5q-39-29-86-44.5T480-280q-53 0-100 15.5T294-220q39 29 86 44.5T480-160Zm0-360q26 0 43-17t17-43q0-26-17-43t-43-17q-26 0-43 17t-17 43q0 26 17 43t43 17Zm0-60Zm0 360Z" />
                     </svg>
                   )}
-                  <h3>{postObject.username}</h3>
+                  <div className="usernameContainer">
+                    <h3>{postObject.username}</h3>
+                    <span>{followers.length} {followersActions(followers.length)}</span>
+                  </div>
                 </Link>
               </span>
               <div className="subButtonInPost">
@@ -379,96 +416,6 @@ function Post() {
                                 stroke="#000000" /* Устанавливаем цвет обводки */
                                 strokeWidth="50"
                               >
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
-                                <circle
-                                  class="firework"
-                                  cx="482"
-                                  cy="-464"
-                                  r="5"
-                                />
                                 <path
                                   d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"
                                   className="notifyMark"
@@ -493,7 +440,7 @@ function Post() {
                       >
                         Добавить тэг
                       </button>
-                      <div className="tags">
+                      <div className="tags-list">
                         {tags &&
                           tags.map((tag, index) => (
                             <span

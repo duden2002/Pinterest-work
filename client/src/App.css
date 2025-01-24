@@ -664,6 +664,10 @@ label {
 }
 
 
+#scrollRight {
+  position: absolute;
+  left: 92%;
+}
 
 .postButtons {
   position: absolute;
@@ -708,13 +712,116 @@ label {
 }
 
 
+.tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+}
+
+.tags-containerHome {
+  position: relative; /* Для позиционирования кнопок */
+  width: 100%;
+  height: auto;
+  overflow: hidden; /* Скрыть элементы, выходящие за пределы */
+}
+
+/* Контейнер с тегами */
 .tags {
-  text-align: left;
-  margin: 5px 0;
-  overflow-x: auto;
-  overflow-y: hidden;
+  display: flex;
+  overflow-x: hidden; /* Горизонтальная прокрутка */
   white-space: nowrap;
   scroll-behavior: smooth;
+  padding: 10px 0;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 1) 20%,
+    rgba(0, 0, 0, 1) 80%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 1) 20%,
+    rgba(0, 0, 0, 1) 80%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  
+}
+
+.tagsMaskImageRight {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 20%,
+    rgba(0, 0, 0, 1) 80%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 20%,
+    rgba(0, 0, 0, 1) 80%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+
+}
+.tagsMaskImageLeft {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 1) 20%,
+    rgba(0, 0, 0, 1) 80%,
+    rgba(0, 0, 0, 1) 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 1) 20%,
+    rgba(0, 0, 0, 1) 80%,
+    rgba(0, 0, 0, 1) 100%
+  );
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+/* Кнопки скролла */
+.scroll-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%); /* Вертикальное центрирование */
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 10; /* Размещаем кнопки поверх всего */
+}
+
+/* Кнопка слева */
+.scroll-button.left {
+  left: -5px;
+  top: 23px;
+}
+
+/* Кнопка справа */
+.scroll-button.right {
+  right: -5px;
+}
+
+
+
+.containerFor {
+  display: inline-block;
 }
 
 .editPostForm {
@@ -724,9 +831,9 @@ label {
 }
 
 .editPostForm .tag {
-
   width: auto;
 }
+
 
 .editPostForm input[type=text] {
   background-color: #3333331c;
@@ -977,7 +1084,7 @@ label {
 .tooltip {
   position: absolute;
   top: 74%;
-  left: 38%;
+  left: 42%;
   background-color: #419152d8;
   width: 340px;
   margin: 4% auto;
@@ -993,7 +1100,7 @@ label {
 .tool-exit {
   position: absolute;
   top: 74%;
-  left: 38%;
+  left: 42%;
   animation: exit 3s forwards;
   background-color: #419152d8;
   color: white;
@@ -1064,6 +1171,18 @@ label {
   
 }
 
+
+.usernameContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.usernameContainer span {
+  display: inline-block;
+  white-space: nowrap;
+}
 
 .post-description {
   display: flex;
@@ -1202,7 +1321,7 @@ label {
 .usernameAvatarSub {
   display: flex;
   align-items: center;
-  gap: 50%;
+  gap: 40%;
 }
 
 .username-commentBody {
@@ -1286,6 +1405,23 @@ label {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+.cropper button {
+  background-color: #44ff6c;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.cropper button:hover{
+  background-color: #248138;
+  color: white;
+}
+
+.users_likes h2 {
+  margin-bottom: 4%;
 }
 
 .profileNavigation {
