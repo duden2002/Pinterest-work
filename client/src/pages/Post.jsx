@@ -32,87 +32,90 @@ function Post() {
   const [followers, setFollowers] = useState([])
 
   useEffect(() => {
-    const fetchAxios = async () => {
-      await axios.get(`http://localhost:3001/posts/byId/${id}`).then((response) => {
-        try {
-          setPostObject(response.data);
-          setTags(response.data.tags.split(","));
-          setUsername(response.data.UserId);
-        } catch {
-          (error) => console.log("Ошибка при получении поста", error);
-        }
-      });
-  
-      await axios
-        .get(`http://localhost:3001/comment/${id}`)
-        .then((response) => {
-          const postsWithPhotos = response.data.comments.map((post) => {
-            const userPhoto = Array.isArray(response.data.user)
-              ? response.data.user.find((user) => user.username === post.username)
-              : null;
-  
-            const userId = Array.isArray(response.data.user)
-              ? response.data.user.find((user) => user.username === post.username)
-              : null;
-  
-            return {
-              ...post,
-              UserId: userId.username.includes(post.username) ? userId.id : null,
-              userPhoto:
-                userPhoto &&
-                userPhoto.userPhoto &&
-                !userPhoto.userPhoto.includes("null")
-                  ? `http://localhost:3001/${userPhoto.userPhoto}`
-                  : null,
-            };
-          });
-          setComments(postsWithPhotos);
-        })
-        .catch((error) =>
-          console.error("Ошибка при получении комментариев", error)
-        );
-  
-      if (authState.token) {
-        await axios
-          .get(`http://localhost:3001/auth/subscriptions/status/${username}`, {
-            withCredentials: true,
-          })
-          .then((response) => {
-            setCheckSubscribe(response.data.isSubscribed);
-            setSubUser(response.data.subscribed);
-          })
-          .catch((error) => {
-            console.error("Ошибка проверки статуса подписки", error);
-          });
+    const fetchPost = async () => {
+      try {
+        const postResponse = await axios.get(`http://localhost:3001/posts/byId/${id}`);
+        setPostObject(postResponse.data);
+        setTags(postResponse.data.tags.split(","));
+        setUsername(postResponse.data.UserId);
+      } catch (error) {
+        console.error("Ошибка при получении поста", error);
       }
+    };
   
-      // Загрузка рекомендаций
-      await axios
-        .get(`http://localhost:3001/posts/recommendations/${id}`)
-        .then((response) => {
-          setRecommendations(response.data.recommendations); // Устанавливаем полученные рекомендации
-        })
-        .catch((error) =>
-          console.error("Ошибка при получении рекомендаций:", error)
+    const fetchComments = async () => {
+      try {
+        const commentsResponse = await axios.get(`http://localhost:3001/comment/${id}`);
+        const postsWithPhotos = commentsResponse.data.comments.map((post) => {
+          const userPhoto = Array.isArray(commentsResponse.data.user)
+            ? commentsResponse.data.user.find((user) => user.username === post.username)
+            : null;
+  
+          const userId = Array.isArray(commentsResponse.data.user)
+            ? commentsResponse.data.user.find((user) => user.username === post.username)
+            : null;
+  
+          return {
+            ...post,
+            UserId: userId && userId.username.includes(post.username) ? userId.id : null,
+            userPhoto:
+              userPhoto && userPhoto.userPhoto && !userPhoto.userPhoto.includes("null")
+                ? `http://localhost:3001/${userPhoto.userPhoto}`
+                : null,
+          };
+        });
+        setComments(postsWithPhotos);
+      } catch (error) {
+        console.error("Ошибка при получении комментариев", error);
+      }
+    };
+  
+    const fetchSubscriptions = async () => {
+      if (authState.token) {
+        try {
+          const subscriptionsResponse = await axios.get(
+            `http://localhost:3001/auth/subscriptions/status/${username}`,
+            { withCredentials: true }
+          );
+          setCheckSubscribe(subscriptionsResponse.data.isSubscribed);
+          setSubUser(subscriptionsResponse.data.subscribed);
+        } catch (error) {
+          console.error("Ошибка проверки статуса подписки", error);
+        }
+      }
+    };
+  
+    const fetchRecommendations = async () => {
+      try {
+        const recommendationsResponse = await axios.get(
+          `http://localhost:3001/posts/recommendations/${id}`
         );
-    }
+        setRecommendations(recommendationsResponse.data.recommendations);
+      } catch (error) {
+        console.error("Ошибка при получении рекомендаций:", error);
+      }
+    };
+  
+    fetchPost();
+    fetchComments();
+    fetchSubscriptions();
+    fetchRecommendations();
     window.scrollTo(0, 0);
-    fetchAxios()
-  }, [id, checkComment, updateContent]);
-
-  const fetchFollowers = async () => {
-    try {
-      const response = await getFollowers(username);
-      setFollowers(response.data);
-    } catch (error) {
-      console.error("Ошибка при получении подписчиков:", error);
+  }, [id, checkComment]); // Убрано `updateContent` из зависимостей
+  
+  useEffect(() => {
+    if (username) {
+      const fetchFollowers = async () => {
+        try {
+          const response = await getFollowers(username);
+          setFollowers(response.data);
+        } catch (error) {
+          console.error("Ошибка при получении подписчиков:", error);
+        }
+      };
+      fetchFollowers();
     }
-  };
-
-  if (followers.length === 0) {
-    fetchFollowers();
-  }
-
+  }, [username]); // `username` остается зависимостью
 
   axios
     .get(`http://localhost:3001/auth/basicinfo/${username}`)

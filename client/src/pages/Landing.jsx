@@ -62,7 +62,7 @@ function Landing() {
       setExitFrame(frame);
       setFrame(frames[nextIndex]);
       frameIndex = nextIndex;
-    }, 7000); // Интервал времени в миллисекундах (5 секунд)
+    }, 7000);
 
     return () => clearInterval(interval); // Очистка интервала при размонтировании
   }, [frame, frames]);

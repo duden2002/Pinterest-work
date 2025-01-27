@@ -1,10 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
 import { subscribeToUser, unsubscribeFromUser, checkSubscriptionStatus } from "../api";
 import Notifications from '../components/Notifications';
+import { AuthContext } from "../helpers/AuthContext";
+import { useContext } from "react";
+
 
 
 const SubscriptionButton = ({ userId, onSubscribe, onUnsubscribe, visible, username }) => {
   let checkRef = useRef(null)
+   const { authState } = useContext(AuthContext);
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [variant, setVariant] = useState(false);
@@ -51,12 +55,16 @@ const SubscriptionButton = ({ userId, onSubscribe, onUnsubscribe, visible, usern
   }
 
   const clickedButton = () => {
-    if(subscribed) {
-      handleUnsubscribe();
-      checkRef.current.notifyError(`Вы отписались от ${username}`)
+    if(authState.status) {
+      if(subscribed) {
+        handleUnsubscribe();
+        checkRef.current.notifyError(`Вы отписались от ${username}`)
+      } else {
+        handleSubscribe();
+        checkRef.current.notifySuccess(`Вы подписались на ${username}`)
+      }
     } else {
-      handleSubscribe();
-      checkRef.current.notifySuccess(`Вы подписались на ${username}`)
+      checkRef.current.notifyError('Авторизуйтесь для подписки')
     }
   }
 

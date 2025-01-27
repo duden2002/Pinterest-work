@@ -59,6 +59,7 @@ function App() {
         <Router>
           <header>
             <div className="links">
+              <div className="warningMessage">Этот сайт не является Pinterest или его зеркалом. Данный сайт является проектом разработанный исключительно в целях обучения разработчика.</div>
               <Link to={"/"}>
                 <div className="logo" onClick={() => setViewPostsButton(false)}>
                   <img src={logo} alt="logo" />
