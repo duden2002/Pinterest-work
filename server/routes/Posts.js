@@ -1,23 +1,32 @@
 const express = require('express');
 const router = express.Router();
-const { Posts, Likes, Collections, Users } = require("../models");
+const { Posts, Likes, Collections, Users, Comments } = require("../models");
 const multer = require("multer");
 const path = require("path");
+const sharp = require("sharp");
 const fs = require("fs")
 const {validateToken} = require("../middlewares/AuthMiddleware")
 const { Op } = require("sequelize");
 
-// Настраиваем multer для хранения файлов в папке "uploads"
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Уникальное имя файла
-  },
-});
-
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+// Функция для обработки изображения с помощью sharp
+const processImage = async (buffer, filename) => {
+  const outputDir = path.join(__dirname, "..", "uploads");
+  const outputPath = path.join(outputDir, filename);
+
+  // Убедитесь, что директория для сохранения существует
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  await sharp(buffer)
+    .jpeg({ quality: 80 }) // Сохраняем в формате JPEG с качеством 80%
+    .toFile(outputPath);
+
+  return `uploads/${filename}`;
+};
 
 // Маршрут для получения всех постов
 router.get("/", validateToken, async (req, res) => {
@@ -233,16 +242,29 @@ router.get("/byId/:id", async (req, res) => {
 
 // Маршрут для создания поста с изображением
 router.post("/", validateToken, upload.single("image"), async (req, res) => {
-  let { title, tags } = req.body;  // Get the title and tags
+  let { title, tags } = req.body;
   const username = req.user.username;
   const userId = req.user.id;
-  const imagePath = req.file ? req.file.path : null;
-
-  // Ensure tags is an array, if it's a string, split it by commas
-
 
   try {
-    const post = await Posts.create({ title, username, imagePath, UserId: userId, tags: tags });
+    let imagePath = null;
+
+    if (req.file) {
+      // Генерация имени файла
+      const filename = Date.now() + ".jpg";
+
+      // Обработка изображения через sharp
+      imagePath = await processImage(req.file.buffer, filename);
+    }
+
+    const post = await Posts.create({
+      title,
+      username,
+      imagePath,
+      UserId: userId,
+      tags,
+    });
+
     res.json(post);
   } catch (error) {
     console.error("Ошибка создания поста:", error);
@@ -252,7 +274,6 @@ router.post("/", validateToken, upload.single("image"), async (req, res) => {
 
 router.put("/changePost", validateToken, upload.single("image"), async (req, res) => {
   const { title, id, tags } = req.body;
-  const newImagePath = req.file ? req.file.path : null;
 
   try {
     const post = await Posts.findByPk(id);
@@ -260,25 +281,32 @@ router.put("/changePost", validateToken, upload.single("image"), async (req, res
       return res.status(404).json({ error: "Пост не найден" });
     }
 
-    // Удаление старого изображения, если загружается новое
-    if (newImagePath && post.imagePath) {
-      const oldImagePath = path.join(__dirname, "..", post.imagePath);
-      fs.unlink(oldImagePath, (err) => {
-        if (err) {
-          console.error("Ошибка при удалении старого изображения:", err);
-        } else {
-          console.log("Старое изображение успешно удалено");
-        }
-      });
+    let newImagePath = post.imagePath;
+
+    if (req.file) {
+      // Генерация имени файла для нового изображения
+      const filename = Date.now() + ".jpg";
+
+      // Обработка нового изображения через sharp
+      newImagePath = await processImage(req.file.buffer, filename);
+
+      // Удаление старого изображения
+      if (post.imagePath) {
+        const oldImagePath = path.join(__dirname, "..", post.imagePath);
+        fs.unlink(oldImagePath, (err) => {
+          if (err) {
+            console.error("Ошибка при удалении старого изображения:", err);
+          } else {
+            console.log("Старое изображение успешно удалено");
+          }
+        });
+      }
     }
 
-    // Обновляем только те поля, которые были переданы
-    const updatedData = {};
-    if (title) updatedData.title = title;
-    if (newImagePath) updatedData.imagePath = newImagePath;
-    if (tags) updatedData.tags = tags;
-
+    // Обновляем пост
+    const updatedData = { title, tags, imagePath: newImagePath };
     await post.update(updatedData);
+
     res.json({ message: "Пост успешно обновлен", post });
   } catch (error) {
     console.error("Ошибка при обновлении поста:", error);
@@ -289,30 +317,61 @@ router.put("/changePost", validateToken, upload.single("image"), async (req, res
 router.delete("/:postId", validateToken, async (req, res) => {
   const postId = req.params.postId;
   try {
-    const post = await Posts.findByPk(String(postId));
-    if(!post) {
-      return res.status(404).json({error: "Пост не найден"});
+    const post = await Posts.findByPk(String(postId), {
+      include: [{ model: Comments }] // Включаем комментарии при поиске поста
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: "Пост не найден" });
     }
+
+    // Удаление изображений в комментариях
+    for (const comment of post.Comments) {
+      const imagePath = comment.imagePath;
+      if (imagePath) {
+        const filePath = path.join(__dirname, "..", imagePath);
+        fs.stat(filePath, (err, stats) => {
+          if (err) {
+            console.error("Ошибка при проверке файла:", err);
+          } else if (stats.isFile()) {
+            fs.unlink(filePath, (err) => {
+              if (err) {
+                console.error("Ошибка при удалении файла комментария:", err);
+              } else {
+                console.log("Файл комментария успешно удален");
+              }
+            });
+          }
+        });
+      }
+    }
+
+    // Удаляем все комментарии к посту
+    await Comments.destroy({ where: { postId: postId } });
+
+    // Удаляем изображение поста
     const imagePath = post.imagePath;
     if (imagePath) {
-      fs.unlink(path.join(__dirname, "..", imagePath), (err) => { //path.join - собирает путь в единое целое, __dirname - абсолютный путь к файлу, ".." - родительская дериктория
-        if(err) {
+      fs.unlink(path.join(__dirname, "..", imagePath), (err) => {
+        if (err) {
           console.error("Ошибка при удалении поста", err);
-          return res.status(500).json({error: "Ошибка при удалении поста"})
+          return res.status(500).json({ error: "Ошибка при удалении поста" });
         }
-        console.log("Пост успешно удален")
-      })
+        console.log("Пост и его изображение успешно удалены");
+      });
     }
-    await Posts.destroy({                      // У sequelize есть метод destroy() который удаляет строку из таблицы 
+
+    // Удаляем сам пост
+    await Posts.destroy({
       where: {
         id: postId,
       },
     });
-    
-    res.json({message: "Пост и изображение успешно удалены"})
-  } catch(error) {
+
+    res.json({ message: "Пост, комментарии и изображения успешно удалены" });
+  } catch (error) {
     console.error("Ошибка при удалении поста", error);
-    res.status(500).json({error: "Ошибка сервера"})
+    res.status(500).json({ error: "Ошибка сервера" });
   }
 });
 

@@ -7,17 +7,10 @@ const {sign} = require("jsonwebtoken")
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { where } = require("sequelize");
+const sharp = require("sharp");  // Импортируем sharp
 
 // Настройка хранилища для аватарок
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "avatarUploads"); // Папка для загрузки аватарок
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Уникальное имя файла
-  },
-});
+const storage = multer.memoryStorage(); // Используем память вместо диска, чтобы сначала обработать изображение в буфере
 
 const upload = multer({ storage: storage });
 
@@ -49,7 +42,7 @@ router.post("/", async (req, res) => {
 // Загрузить/обновить аватарку пользователя
 router.post("/avatar", validateToken, upload.single("avatar"), async (req, res) => {
   const userId = req.user.id; // Получаем ID текущего пользователя из токена
-  const userPhoto = req.file ? req.file.path : null;
+  const userPhoto = req.file ? req.file.buffer : null;  // Получаем изображение из буфера
 
   try {
     // Проверяем, существует ли пользователь
@@ -58,23 +51,37 @@ router.post("/avatar", validateToken, upload.single("avatar"), async (req, res) 
       return res.status(404).json({ error: "Пользователь не найден" });
     }
 
-    // Удаляем старую аватарку, если она была загружена ранее
+    // Если есть старая аватарка, удаляем её
     if (user.userPhoto) {
       fs.unlink(path.join(__dirname, "..", user.userPhoto), (err) => {
         if (err) console.error("Ошибка удаления старой аватарки:", err);
       });
     }
 
-    // Обновляем путь к аватарке
-    user.userPhoto = userPhoto;
+    // Обрабатываем изображение с помощью sharp
+    const processedImageBuffer = await sharp(userPhoto)
+      .toFormat("jpeg")  // Преобразуем в формат jpeg
+      .jpeg({ quality: 90 })  // Устанавливаем качество изображения
+      .toBuffer();  // Получаем обработанное изображение в буфере
+
+    // Генерируем уникальное имя для файла
+    const fileName = `${Date.now()}.jpeg`;
+    const filePath = path.join("avatarUploads", fileName);
+
+    // Сохраняем изображение на диск
+    fs.writeFileSync(filePath, processedImageBuffer);
+
+    // Обновляем путь к аватарке в базе данных
+    user.userPhoto = filePath;
     await user.save();
 
-    res.json({ message: "Аватарка обновлена успешно", userPhoto: `http://localhost:3001/${userPhoto}` });
+    res.json({ message: "Аватарка обновлена успешно", userPhoto: `http://localhost:3001/${filePath}` });
   } catch (error) {
     console.error("Ошибка загрузки аватарки:", error);
     res.status(500).json({ error: "Не удалось загрузить аватарку" });
   }
 });
+
 
 router.get("/auth", validateToken, (req, res) => {
   res.json(req.user);

@@ -33,6 +33,22 @@ header {
   z-index: 999;
 }
 
+.warningMessage {
+  background-color: red;
+  color: white;
+  position: absolute;
+  padding: 16px;
+  top: -8%;
+  left: 23%;
+  border-radius: 0 0 24px 24px;
+  user-select: none;
+  animation: warning 2s forwards;
+}
+
+.headerAvatarSvg {
+  transform: rotateX(180deg);
+}
+
 svg {
   cursor: pointer;
 }
@@ -123,6 +139,7 @@ svg {
   margin-top: 4%;
   height: 91.7vh;
   overflow: hidden;
+  user-select: none;
 }
 
 section {
@@ -1343,7 +1360,8 @@ label {
 
 .comment-img img {
   width: 440px;
-  max-height: 500px;
+  height: 500px;
+  object-fit: contain;
 }
 
 
@@ -1603,8 +1621,16 @@ label {
 /* Контейнер для меню */
 .dropdown-container {
   position: relative;
-  display: inline-block;
-  margin-right: 5%;
+  display: flex;
+  align-items: center;
+  margin-right: 2%;
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.dropdown-container:hover {
+  background-color: rgb(211, 211, 211);
+
 }
 
 /* Стили текста */
@@ -1984,3 +2010,8 @@ label {
   50% {transform: translateY(-50%);}
   100% {transform: translateY(0%);}
 }
+@keyframes warning {
+  0% {transform: translateY(-100%);}
+  100% {transform: translateY(0%);}
+}
+
